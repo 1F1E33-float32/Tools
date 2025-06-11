@@ -1,46 +1,50 @@
-import os
-import json
-import shutil
-from tqdm import tqdm
+import os, json, shutil, argparse
 
-ba = r'D:\Fuck_galgame\voice'
+def parse_args(args=None, namespace=None):
+    p = argparse.ArgumentParser()
+    p.add_argument('--audio_dir',  default=r"D:\Fuck_galgame\vo")
+    p.add_argument('--index_json', default=r"D:\Fuck_galgame\index.json")
+    p.add_argument('--out_dir',    default=r"D:\Dataset_VN\vividX_Clover Reset")
+    return p.parse_args(args=args, namespace=namespace)
 
-with open(r'D:\Fuck_galgame\index.json', 'r', encoding='utf-8') as f:
-    index_data = json.load(f)
+def main(audio_dir, index_path, out_dir):
+    # 1. 收集所有 .ogg 文件，建立 basename -> fullpath 的映射
+    audio_map = {}
+    for root, _, files in os.walk(audio_dir):
+        for f in files:
+            if f.lower().endswith('.ogg'):
+                name = os.path.splitext(f)[0]
+                audio_map[name] = os.path.join(root, f)
 
-audio_files = {}
-for root, dirs, files in os.walk(ba):
-    for file in files:
-        if file.endswith('.ogg'):
-            audio_files[file.lower()] = os.path.join(root, file)
+    # 2. 读取 index.json
+    with open(index_path, encoding='utf-8') as fp:
+        data = json.load(fp)
 
-updated_index = []
+    # 3. 过滤：Voice 为 None 或者 找得到对应音频的保留，其他丢弃
+    new_data = []
+    for rec in data:
+        v = rec.get('Voice')
+        if v is None or v in audio_map:
+            new_data.append(rec)
+        else:
+            print(f"跳过，找不到音频: Voice={v}")
 
-for entry in tqdm(index_data):
-    speaker = entry['Speaker'].lower()
-    voice = entry['Voice'].lower()
-    entry['Speaker'] = speaker
-    entry['Voice'] = voice
+    # 4. 把音频拷贝到 out_dir/{Speaker}/{Voice}.ogg
+    for rec in new_data:
+        v = rec.get('Voice')
+        sp = rec.get('Speaker')
+        if v:
+            dst_dir = os.path.join(out_dir, sp or '')
+            os.makedirs(dst_dir, exist_ok=True)
+            src = audio_map[v]
+            dst = os.path.join(dst_dir, v + '.ogg')
+            shutil.copy2(src, dst)
 
-    expected_filename = f"{voice}.ogg"
+    # 5. 写新的 index.json 到 out_dir/index.json
+    os.makedirs(out_dir, exist_ok=True)
+    with open(os.path.join(out_dir, 'index.json'), 'w', encoding='utf-8') as fp:
+        json.dump(new_data, fp, ensure_ascii=False, indent=4)
 
-    audio_file_path = audio_files.get(expected_filename)
-
-    if not audio_file_path:
-        for key, path in audio_files.items():
-            if key.endswith(expected_filename):
-                audio_file_path = path
-                break
-
-    if audio_file_path:
-        speaker_folder = os.path.join(ba.replace('voice', 'f_'), speaker)
-        if not os.path.exists(speaker_folder):
-            os.makedirs(speaker_folder)
-        shutil.copy(audio_file_path, os.path.join(speaker_folder, expected_filename))
-        updated_index.append(entry)
-    else:
-        print(f"音频文件 {expected_filename} 未找到")
-
-output_index_path = os.path.join(ba.replace('voice', 'f_'), 'index.json')
-with open(output_index_path, 'w', encoding='utf-8') as f:
-    json.dump(updated_index, f, ensure_ascii=False, indent=4)
+if __name__ == '__main__':
+    args = parse_args()
+    main(args.audio_dir, args.index_json, args.out_dir)

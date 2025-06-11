@@ -8,7 +8,7 @@ import TextCleaner_BGI_C
 
 def parse_args(args=None, namespace=None):
     parser = argparse.ArgumentParser()
-    parser.add_argument("-JA", type=str, default=r"D:\Fuck_galgame\script")
+    parser.add_argument("-JA", type=str, default=r"C:\Users\OOPPEENN\Desktop\1")
     parser.add_argument("-vo", type=str, default=r'D:\Fuck_galgame\voice')
     parser.add_argument("-op", type=str, default=r'D:\Fuck_galgame\index.json')
     parser.add_argument("-ve", type=int, default=1)
@@ -49,6 +49,13 @@ def main(JA_dir, voice_path, op_json, version):
             data = file.read()
             code_section = get_code_section(data)
         print(filename)
+        a = []
+        for index in code_section:
+            print(index, code_section[index])
+            if "bs5" in code_section[index][1]:
+                continue
+            a.append(code_section[index])
+
         for index in code_section:
             continue
             match version:
