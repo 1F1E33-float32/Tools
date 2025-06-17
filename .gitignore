@@ -1,4 +1,16 @@
-TextCleaner_Softpal.py
-*.har
+# VSCode
+.vscode
+
+# Python
 __pycache__/
 .venv
+
+# Nodejs
+node_modules/
+hook.js
+
+#
+*.har
+
+# 
+TextCleaner_Softpal.py

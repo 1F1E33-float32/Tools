@@ -91,8 +91,8 @@ def extract_assets(source, target, include_types=None, ignore_first_dirs=0, appe
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--src", default=r"E:\Game_Dataset\jp.co.cygames.princessconnectredive\RAW")
-    parser.add_argument("--dst", default=r"E:\Game_Dataset\jp.co.cygames.princessconnectredive\EXP\Story")
+    parser.add_argument("--src", default=r"D:\Dataset_Game\jp.co.cygames.princessconnectredive\RAW\a")
+    parser.add_argument("--dst", default=r"D:\Dataset_Game\jp.co.cygames.princessconnectredive\EXP\Story")
     parser.add_argument("--id", default=True)
     parser.add_argument("--ignore", type=int, default=5, metavar="N")
     parser.add_argument("--filter", nargs="+", default=["TextAsset"])

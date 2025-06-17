@@ -8,9 +8,9 @@ from tqdm import tqdm
 
 def parse_args(args=None, namespace=None):
     parser = argparse.ArgumentParser()
-    parser.add_argument("-fl", type=str, default=r"D:\Wuthering Waves\pakchunk10-WindowsNoEditor\Client\Content\Aki\ConfigDB\db_flowState.db")
-    parser.add_argument("-la", type=str, default=r"D:\Wuthering Waves\pakchunk10-WindowsNoEditor\Client\Content\Aki\ConfigDB\ko\lang_multi_text.db")
-    parser.add_argument("-fa", type=str, default=r"D:\Wuthering Waves\pakchunk10-WindowsNoEditor\Client\Content\Aki\ConfigDB\db_favor.db")
+    parser.add_argument("-fl", type=str, default=r"D:\Reverse\_Unreal Engine\FModel\Output\Exports\Client\Content\Aki\ConfigDB\db_flowState.db")
+    parser.add_argument("-la", type=str, default=r"D:\Reverse\_Unreal Engine\FModel\Output\Exports\Client\Content\Aki\ConfigDB\ko\lang_multi_text.db")
+    parser.add_argument("-fa", type=str, default=r"D:\Reverse\_Unreal Engine\FModel\Output\Exports\Client\Content\Aki\ConfigDB\db_favor.db")
 
     parser.add_argument("-au", type=str, default=r"D:\Wuthering Waves\Resource_ko")
     parser.add_argument("-op", type=str, default=r"D:\AI\Audio_Tools\python\WutheringWaves_KO_index.json")

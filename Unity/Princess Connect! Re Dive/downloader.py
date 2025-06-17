@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from rich.progress import (BarColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn, TimeRemainingColumn)
 
-BASE_RES_ROOT = "https://prd-priconne-redive.akamaized.net/dl/Resources/10063200/Jpn"
+BASE_RES_ROOT = "https://prd-priconne-redive.akamaized.net/dl/Resources/10063900/Jpn"
 
 MANIFEST_ROOT = f"{BASE_RES_ROOT}/AssetBundles/Android"
 MANIFEST_FILE = f"{MANIFEST_ROOT}/manifest/manifest_assetmanifest"
@@ -19,12 +19,12 @@ POOL_ROOT_ASSETBUNDLES = "https://prd-priconne-redive.akamaized.net/dl/pool/Asse
 POOL_ROOT_SOUND =        "https://prd-priconne-redive.akamaized.net/dl/pool/Sound"
 POOL_ROOT_MOVIE =        "https://prd-priconne-redive.akamaized.net/dl/pool/Movie"
 
-columns = (SpinnerColumn(), TextColumn("[bold blue]{task.description}"), BarColumn(bar_width=100), "[progress.percentage]{task.percentage:.2f}%", TimeElapsedColumn(), "•", TimeRemainingColumn())
+columns = (SpinnerColumn(), TextColumn("[bold blue]{task.description}"), BarColumn(bar_width=100), "[progress.percentage]{task.percentage:>6.2f}%", TextColumn("{task.completed}/{task.total}"), TimeElapsedColumn(), "•", TimeRemainingColumn())
 
 def parser_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--root", type=Path, default=Path(r"E:\Game_Dataset\jp.co.cygames.princessconnectredive"))
-    parser.add_argument("--workers", type=int, default=32)
+    parser.add_argument("--root", type=Path, default=Path(r"D:\Dataset_Game\jp.co.cygames.princessconnectredive\RAW"))
+    parser.add_argument("--workers", type=int, default=16)
     return parser.parse_args()
 
 @dataclass()
@@ -86,7 +86,7 @@ def gather_assets(sess):
     master_text = fetch_text(sess, MANIFEST_FILE)
     master_items = parse_manifest_lines(master_text.splitlines())
 
-    extra_manifest_urls = [MANIFEST_SOUND, MANIFEST_MOVIE]
+    extra_manifest_urls = [MANIFEST_SOUND]
     master_items.extend([(url, "", "", "", 0) for url in extra_manifest_urls])
 
     print(f"Found {len(master_items)} sub‑manifests, fetching…")

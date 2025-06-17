@@ -94,6 +94,8 @@ def check(code_bytes, pos, cfcn, cpos):
 	return get_dword(code_bytes, pos + cpos) == cfcn
 	
 def get_code_section(code_bytes, text_section, config):
+	with open('code.bin', 'wb') as f:
+		f.write(code_bytes)
 	pos = 4
 	code_size = len(code_bytes)
 	code_section = {}
@@ -129,5 +131,6 @@ def get_code_section(code_bytes, text_section, config):
 
 			elif type == config['FILE_TYPE']:
 				pass
+			
 		pos += 4
 	return code_section

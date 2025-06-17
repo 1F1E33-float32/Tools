@@ -5,7 +5,7 @@ import threading
 print_lock = threading.Lock()
 
 def main(file_path):
-    psb_decompile_path = os.path.join(os.path.dirname(__file__), 'TextCleaner_Kirikiri_scn_Psb.exe')
+    psb_decompile_path = os.path.join(os.path.dirname(__file__), 'PsbDecompile.exe')
     command = [psb_decompile_path, file_path]
     subprocess.run(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
@@ -14,7 +14,7 @@ def process_files(file_list):
         main(file_path)
 
 if __name__ == '__main__':
-    input_directory_path = r"D:\Fuck_galgame\script"
+    input_directory_path = r"C:\Users\OOPPEENN\Downloads\GAL\2025_04\Motto! Haramase! Honoo no Oppai Isekai Oppai Bunny Gakuen!\Extractor_Output"
     THREAD_NUM = 20
 
     scn_files = []

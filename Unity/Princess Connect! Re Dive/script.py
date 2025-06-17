@@ -10,7 +10,7 @@ columns = (SpinnerColumn(), BarColumn(bar_width=100), "[progress.percentage]{tas
 
 def args_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input", type=Path, default=Path(r"E:\Game_Dataset\jp.co.cygames.princessconnectredive\EXP\Story"))
+    parser.add_argument("--input", type=Path, default=Path(r"D:\Dataset_Game\jp.co.cygames.princessconnectredive\EXP\Story"))
     parser.add_argument("--output", type=Path, default=Path(r"index.json"))
     args = parser.parse_args()
     return args
@@ -209,7 +209,7 @@ def main(data):
 if __name__ == "__main__":
     args = args_parser()
     result = []
-    major = 0
+    scene = 0
 
     input_dir = args.input
     all_bytes = list(input_dir.rglob("*.bytes"))
@@ -223,7 +223,7 @@ if __name__ == "__main__":
             story_dict = deserialize_story(data)
             story_json = main(data)
 
-            minor = 0
+            line = 0
             for block in story_json.values():
                 voice = block.get("vo")
                 if not voice:
@@ -233,14 +233,14 @@ if __name__ == "__main__":
                 if '{0}' in text:
                     continue
                 result.append({
-                    "major":   major,
-                    "minor":   minor,
                     "Speaker": speaker,
                     "Voice":   voice,
-                    "Text":    text
+                    "Text":    text,
+                    "scene":   scene,
+                    "line":    line
                 })
-                minor += 1
-            major += 1
+                line += 1
+            scene += 1
 
     output_json = json.dumps(result, ensure_ascii=False, indent=2)
     args.output.parent.mkdir(parents=True, exist_ok=True)
