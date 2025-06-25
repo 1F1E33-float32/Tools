@@ -14,7 +14,7 @@ def process_files(file_list):
         main(file_path)
 
 if __name__ == '__main__':
-    input_directory_path = r"C:\Users\OOPPEENN\Downloads\GAL\2025_04\Motto! Haramase! Honoo no Oppai Isekai Oppai Bunny Gakuen!\Extractor_Output"
+    input_directory_path = r"D:\GAL\#OK\KANADE\Extractor_Output\data"
     THREAD_NUM = 20
 
     scn_files = []

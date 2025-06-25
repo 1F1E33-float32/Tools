@@ -74,7 +74,7 @@ def main_vm_w(VM_dir, op_json):
             if Voice in seen:
                 continue
             seen.add(Voice)
-            match 1:
+            match 0:
                 case 0:
                     a = re.match(r"【(.*?)】(.*)", text)
                     if not a:
@@ -88,7 +88,7 @@ def main_vm_w(VM_dir, op_json):
                 Speaker = Speaker.split('／')[-1]
                 Text = a.group(2)
                 Text = text_cleaning(Text)
-                result.append({'Speaker': Speaker, 'Voice': Voice, 'Text': Text})
+                result.append({'Speaker': Speaker, 'Voice': Voice.lower(), 'Text': Text})
             
     with open(op_json, mode='w', encoding='utf-8') as file:
         json.dump(result, file, ensure_ascii=False, indent=4)

@@ -5,7 +5,7 @@ import shutil
 
 def parse_args(args=None, namespace=None):
     parser = argparse.ArgumentParser()
-    parser.add_argument("-JA", type=str, default=r"C:\Users\OOPPEENN\Downloads\GAL\2025_04\Motto! Haramase! Honoo no Oppai Isekai Oppai Bunny Gakuen!\Extractor_Output")
+    parser.add_argument("-JA", type=str, default=r"D:\GAL\2025_04\Role player Ikura Shimai no Nenmaku Portrait - Gurigucha LIVE!\Extractor_Output\data")
     parser.add_argument("-op", type=str, default=r"D:\Fuck_galgame\script")
     return parser.parse_args(args=args, namespace=namespace)
 

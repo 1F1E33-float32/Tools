@@ -52,8 +52,12 @@ class ScriptReader(Reader):
       return [Instruction(*struct.unpack('<ii', self.data.read(8))) for i in range(code_count)]
 
   def _read_string_list(self) -> Dict[int, str]:
-      length = self._read_i32()
-      return {i: SingleQuotedScalarString(self.read_string()) for i in range(length)}
+        length = self._read_i32()
+        result: Dict[int, str] = {}
+        for i in range(length):
+            raw = self.read_string()
+            result[i] = SingleQuotedScalarString(raw)
+        return result
   
   def _read_banks_params(self) -> Dict[int, Any]:
       bank_count = self._read_i32()

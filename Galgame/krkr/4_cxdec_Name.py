@@ -2,7 +2,7 @@ import os
 import shutil
 
 def main():
-    src_folder = r"C:\Users\OOPPEENN\Downloads\GAL\2025_04\Motto! Haramase! Honoo no Oppai Isekai Oppai Bunny Gakuen!\Extractor_Output"
+    src_folder = r"D:\GAL\2025_04\Role player Ikura Shimai no Nenmaku Portrait - Gurigucha LIVE!\Extractor_Output\voice"
     dst_folder = r"D:\Fuck_galgame\voice"
 
     # 如果目标文件夹不存在，则创建

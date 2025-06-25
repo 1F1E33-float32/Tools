@@ -28,6 +28,8 @@ def text_cleaning(text):
 
 def process_type0(_0_JA_data):
     results = []
+    if _0_JA_data['name'].startswith('dummy'):
+        return results
     if 'scenes' in _0_JA_data:
         for _1_JA_scenes in _0_JA_data['scenes']:
             if 'texts' in _1_JA_scenes:

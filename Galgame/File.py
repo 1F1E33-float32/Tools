@@ -1,11 +1,12 @@
 import os, json, shutil, argparse
+from tqdm import tqdm
 
 def parse_args(args=None, namespace=None):
     p = argparse.ArgumentParser()
     p.add_argument('--audio_ext', default='.ogg')
     p.add_argument('--audio_dir',  default=r"D:\Fuck_galgame\voice")
     p.add_argument('--index_json', default=r"D:\Fuck_galgame\index.json")
-    p.add_argument('--out_dir',    default=r"D:\Dataset_VN\Milk Factory_Motto! Haramase! Honoo no Oppai Isekai Oppai Bunny Gakuen!")
+    p.add_argument('--out_dir',    default=r"D:\Dataset_VN_Scene\Lusterise_Mahou Reiki Magisphere")
     return p.parse_args(args=args, namespace=namespace)
 
 def main(audio_ext, audio_dir, index_path, out_dir):
@@ -37,7 +38,7 @@ def main(audio_ext, audio_dir, index_path, out_dir):
             rec['Voice'] = v + audio_ext
 
     # 4. 把音频拷贝到 out_dir/{Speaker}/{Voice}
-    for rec in new_data:
+    for rec in tqdm(new_data):
         v = rec.get('Voice')
         sp = rec.get('Speaker')
         if v:
@@ -45,7 +46,7 @@ def main(audio_ext, audio_dir, index_path, out_dir):
             os.makedirs(dst_dir, exist_ok=True)
             src = audio_map[os.path.splitext(v)[0]]
             dst = os.path.join(dst_dir, v)
-            shutil.copy2(src, dst)
+            shutil.copy(src, dst)
 
     # 5. 写新的 index.json
     os.makedirs(out_dir, exist_ok=True)

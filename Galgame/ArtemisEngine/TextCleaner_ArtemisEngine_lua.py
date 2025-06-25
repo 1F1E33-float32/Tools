@@ -60,7 +60,8 @@ def process_type2(filename, lua, results):
                 Speaker = vo[0]['ch']
                 Voice = vo[0]['file']
             
-            results.append({'Speaker': Speaker, 'Voice': Voice, 'Text': Text})
+            if Speaker and Voice and Text:
+                results.append({'Speaker': Speaker, 'Voice': Voice, 'Text': Text})
             
 PROCESSORS = {0: process_type0, 1: process_type1, 2: process_type2}
 def main(JA_dir, op_json, force_version):
@@ -71,17 +72,20 @@ def main(JA_dir, op_json, force_version):
     files = glob(f"{JA_dir}/**/*.ast", recursive=True) + glob(f"{JA_dir}/**/*.lua", recursive=True)
     results = []
 
-    for scene_idx, fn in enumerate(files):
+    for fn in files:
         print(fn)
-        start = len(results)
         PROCESSORS[force_version](fn, lua, results)
 
-        for line_idx, item in enumerate(results[start:], 0):
-            item['scene'] = scene_idx
-            item['line'] = line_idx
+    seen = set()
+    unique_results = []
+    for entry in results:
+        v = entry.get("Voice")
+        if v and v not in seen:
+            seen.add(v)
+            unique_results.append(entry)
 
-    with open(op_json, 'w', encoding='utf-8') as fp:
-        json.dump(results, fp, ensure_ascii=False, indent=4)
+    with open(op_json, 'w', encoding='utf-8') as f:
+        json.dump(unique_results, f, ensure_ascii=False, indent=4)
 
 if __name__ == '__main__':
     a = parse_args()
