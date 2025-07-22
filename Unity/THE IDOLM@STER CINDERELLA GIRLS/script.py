@@ -1,14 +1,16 @@
 import re
+import json
 import enum
 import base64
 import argparse
+from tqdm import tqdm
 from typing import List
 from glob import glob
 from dataclasses import dataclass, field
 
 def args_parse():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--src", default=r"E:\Game_Dataset\jp.co.bandainamcoent.BNEI0242\EXP\Story")
+    parser.add_argument("--src", default=r"D:\Dataset_Game\jp.co.bandainamcoent.BNEI0242\EXP\Story")
     return parser.parse_args()
 
 class CommandCategory(enum.Enum):
@@ -252,13 +254,54 @@ if __name__ == "__main__":
     args = args_parse()
     src = args.src
     files = glob(f"{src}/*.bytes", recursive=True)
-    for file in files:
+    results = []
+    seen = set()
+    for file in tqdm(files, ncols=150):
         with open(file, "rb") as f:
             data = f.read()
             parser = Parser(data)
             commands = parser.Deserialize()
+
+            is_voice = False
+            is_start = False
+            Voice = None
+            Text_accum = ""
+            Speaker_temp = None
+
             for cmd in commands:
-                if cmd.Name == "print":
-                    print(f"Name: {cmd.Name}, Args: {cmd.Args}, Category: {cmd.Category}")
-                if cmd.Name == "vo":
-                    print(f"Name: {cmd.Name}, Args: {cmd.Args}, Category: {cmd.Category}")
+                if cmd.Name == "title_telop":
+                    story_id = cmd.Args[0]
+                    is_start = True
+
+                elif cmd.Name == "vo" and is_start:
+                    Voice = int(cmd.Args[0].split("_")[-1]) + 1
+                    Voice = f"story_{story_id}_{Voice:03d}"
+                    is_voice = True
+
+                    Text_accum = ""
+                    Speaker_temp = None
+
+                elif cmd.Name == "print" and is_start and is_voice:
+                    if Speaker_temp is None:
+                        Speaker_temp = cmd.Args[0]
+                        Speaker_temp = Speaker_temp.replace(" ", "").replace("?", "？")
+                        if Speaker_temp == "":
+                            is_voice = False
+                            continue
+                    Text_accum += cmd.Args[1]
+
+                elif cmd.Name == "touch" and is_start and is_voice:
+                    if Text_accum:
+                        if Voice in seen:
+                            is_voice = False
+                            continue
+                        seen.add(Voice)
+                        results.append({
+                            "Speaker": Speaker_temp,
+                            "Voice": Voice,
+                            "Text": Text_accum.replace(r"\n", "").replace(" ", "").replace("（", "").replace("）", ""),
+                        })
+                    is_voice = False
+
+    with open(r"D:\Fuck_galgame\index.json", "w", encoding="utf-8") as f:
+        json.dump(results, f, ensure_ascii=False, indent=4)

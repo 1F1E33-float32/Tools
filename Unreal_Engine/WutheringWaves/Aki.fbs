@@ -1,0 +1,29 @@
+namespace Aki;
+
+table FavorWord {
+  Id:int;
+  RoleId:int;
+  Type:int;
+  Sort:int;
+  Title:string;
+  Content:string;
+  Voice:string;
+  CVCn:string;
+  CVJp:string;
+  CVEn:string;
+  CVKo:string;
+  CondGroupId:int;
+  MotionImg:string;
+  AniBlueprint:string;
+  AniMontage:string;
+  Morph:int;
+}
+
+table FlowState {
+  StateKey:string;
+  Id:int;
+  KeepBgm:bool;
+  IsPreloadFlow:bool;
+  Pos:string;
+  Actions:string;
+}

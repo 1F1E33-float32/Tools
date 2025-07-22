@@ -1,4 +1,4 @@
-import json, re
+import json, re, os
 
 BRACKET_RE = re.compile(r'^\[(\w+)\s*(.*)]$')
 
@@ -9,19 +9,26 @@ def smart_split(s: str):
     parts, buf, depth = [], [], 0
     for ch in s:
         if ch == ' ' and depth == 0:
-            if buf: parts.append(''.join(buf)); buf = []
+            if buf:
+                parts.append(''.join(buf))
+                buf = []
         else:
             buf.append(ch)
-            if ch in '[{': depth += 1
-            elif ch in ']}': depth -= 1
-    if buf: parts.append(''.join(buf))
+            if ch in '[{':
+                depth += 1
+            elif ch in ']}':
+                depth -= 1
+    if buf:
+        parts.append(''.join(buf))
     return parts
 
 def parse_value(raw: str):
     raw = unescape_braces(raw)
     if raw.startswith('{') and raw.endswith('}'):
-        try:      return json.loads(raw)
-        except:   return raw
+        try:
+            return json.loads(raw)
+        except:
+            return raw
     if raw.startswith('[') and raw.endswith(']'):
         # 把最外层 [] 剥掉后按内部分项继续解析
         inner = raw[1:-1].strip()
@@ -31,8 +38,10 @@ def parse_value(raw: str):
         cur, depth = [], 0
         for ch in inner:
             cur.append(ch)
-            if ch == '[': depth += 1
-            elif ch == ']': depth -= 1
+            if ch == '[':
+                depth += 1
+            elif ch == ']':
+                depth -= 1
             if depth == 0 and ch == ']':
                 items.append(''.join(cur))
                 cur = []
@@ -54,12 +63,26 @@ def parse_line(line: str):
     return out
 
 if __name__ == '__main__':
-    with open(r"E:\Game_Dataset\jp.co.bandainamcoent.BNEI0421\RAW\m_adventure\adv_cidol-amao-3-000_01.txt", 'r', encoding='utf-8') as f:
-        lines = f.readlines()
+    in_dir = r"D:\Dataset_Game\com.bandainamcoent.idolmaster_gakuen\RAW\m_adventure"
+    for item in os.listdir(in_dir):
+        if not item.endswith('.txt'):
+            continue
+        with open(os.path.join(in_dir, item), 'r', encoding='utf-8') as f:
+            try:
+                lines = f.readlines()
+            except:
+                continue
 
-    result = []
-    for line in lines:
-        line = parse_line(line)
-        result.append(line)
+        result = []
+        for line in lines:
+            is_msg = False
+            line = parse_line(line)
+            if line['cmd'] == 'message':
+                Text = line['text']
+                is_msg = True
+                
+            elif line['cmd'] == 'voice' and is_msg:
+                pass
 
-    pass
+            elif line['cmd'] == 'messgae' and is_msg:
+                is_msg = False

@@ -1,10 +1,11 @@
 import os
 import json
 import argparse
+from tqdm import tqdm
 import av
 
 def get_audio_duration(path: str) -> float:
-    container = av.open(path)
+    container = av.open(path, metadata_errors="ignore")
     # container.duration 单位是 AV_TIME_BASE（1e6）倍数
     if container.duration is not None:
         return container.duration / 1_000_000
@@ -18,7 +19,7 @@ def get_audio_duration(path: str) -> float:
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--folder", default=r"D:\Dataset_VN_Scene\Lusterise_Mahou Reiki Magisphere")
+    parser.add_argument("--folder", default=r"D:\Dataset_VN_NoScene\#OK ENG\TWD")
     parser.add_argument("--input-json", default="index.json")
     parser.add_argument("--output-json", default="index_with_duration.json")
     args = parser.parse_args()
@@ -34,7 +35,7 @@ def main():
     valid_count = 0
     error_count = 0
 
-    for entry in data:
+    for entry in tqdm(data, ncols=150):
         speaker = entry.get("Speaker")
         voice   = entry.get("Voice")
 

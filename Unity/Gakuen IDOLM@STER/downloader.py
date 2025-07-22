@@ -176,7 +176,7 @@ def download_many(root, assets_a, assets_m, workers):
 if __name__ == "__main__":
     args = parse_args()
     print("Fetching Asset Manifest")
-    asset_manifest = Game_API().call_game("/v2/pub/a/400/v/705000/list/0")
+    asset_manifest = Game_API().call_game("/v2/pub/a/400/v/205000/list/0")
     
     to_dl_a, to_dl_m, skipped, total_gib = filter_existing(args.RAW, asset_manifest)
     print(f"Total: {len(to_dl_a) + len(to_dl_m)}, Skipped: {skipped}, Size: {total_gib:.2f} GiB")

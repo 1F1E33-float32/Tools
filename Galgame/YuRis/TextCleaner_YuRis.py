@@ -42,7 +42,7 @@ def main_txt(JA_dir, op_json):
                 if Speaker == None or Voice == None or match.group(4) == None:
                     print(f"Error: {filename}")
                     continue
-                results.append({'Speaker': Speaker, 'Voice': Voice, 'Text': text_cleaning(match.group(4))})
+                results.append({'Speaker': Speaker, 'Voice': Voice.lower(), 'Text': text_cleaning(match.group(4))})
             match = re.match(r'\\VO\(([^)]+)\)【([^】]+)】(.+)', lines)
             if match:
                 Voice = match.group(1)
@@ -54,7 +54,7 @@ def main_txt(JA_dir, op_json):
                 if Speaker == None or Voice == None or match.group(3) == None:
                     print(f"Error: {filename}")
                     continue
-                results.append({'Speaker': Speaker, 'Voice': Voice, 'Text': text_cleaning(match.group(3))})
+                results.append({'Speaker': Speaker, 'Voice': Voice.lower(), 'Text': text_cleaning(match.group(3))})
 
     with open(op_json, mode='w', encoding='utf-8') as file:
         json.dump(results, file, ensure_ascii=False, indent=4)
@@ -74,7 +74,7 @@ def main_vm_w(VM_dir, op_json):
             if Voice in seen:
                 continue
             seen.add(Voice)
-            match 0:
+            match 1:
                 case 0:
                     a = re.match(r"【(.*?)】(.*)", text)
                     if not a:

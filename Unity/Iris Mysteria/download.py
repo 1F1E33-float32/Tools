@@ -99,7 +99,7 @@ class Game_API:
     
     def call_index_assetbundle(self, endpoint: str) -> dict:
         base = urllib.parse.urljoin(self.asset_url, endpoint)
-        sep = '&' if '?' in base else '?'
+        sep = '&' if '?' in base else '?'   
         url = f"{base}{sep}x={''.join(random.choices('0123456789', k=18))}"
         resp = self._get(url).content
 
@@ -207,9 +207,9 @@ if __name__ == "__main__":
     version = data['versions']['assetversion']
     Game_API.app_version = data['versions']['appversion']
     
-    #mai = client.call_index_assetbundle(f'{version}/assetbundle/Windows/Windows')
+    mai = client.call_index_assetbundle(f'{version}/assetbundle/Windows/Windows')
 
-    #download_many_assetbundle(args.RAW, mai, version,  args.thread)
+    download_many_assetbundle(args.RAW, mai, version,  args.thread)
 
     #voice_mai = client.call_index_voice(f'{version}/assetbundle/sound/PC/VOICE/manifest.json')
     #download_many_voice(args.RAW, voice_mai, version, args.thread)

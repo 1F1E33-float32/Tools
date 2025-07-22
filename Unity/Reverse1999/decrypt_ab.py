@@ -1,8 +1,12 @@
-import io, os
+import io
+import os
+from multiprocessing import Pool, cpu_count
+
 
 def get_ab_encrypt_key(md5_name):
     key = sum(ord(c) for c in md5_name) & 0xFF
     return (key + 2 * ((key & 1) + 1)) & 0xFF
+
 
 def decrypt_reverse_1999(file_path):
     with open(file_path, 'rb') as f:
@@ -11,16 +15,17 @@ def decrypt_reverse_1999(file_path):
     sig_bytes = bytearray(data[:8])
     sig = sig_bytes[:7].decode('utf-8', errors='ignore')
     # 如果已经是 UnityFS，直接返回原始流
-    if sig == 'UnityFS':
+    if sig == 'UnityFS':    
         print(f'[SKIP] UnityFS: {file_path}')
         return io.BytesIO(data)
 
     stem = os.path.splitext(os.path.basename(file_path))[0]
     key = get_ab_encrypt_key(stem)
-    # 试图解签名
+    # 尝试解签名
     for i in range(len(sig_bytes)):
         sig_bytes[i] ^= key
     sig = sig_bytes[:7].decode('utf-8', errors='ignore')
+
     # 如果解出 UnityFS，继续解剩余数据
     if sig == 'UnityFS':
         rem = bytearray(data[8:])
@@ -38,21 +43,39 @@ def decrypt_reverse_1999(file_path):
     print(f"[WARN] Not encrypted: {file_path}")
     return io.BytesIO(data)
 
-def batch_decrypt(input_dir, output_dir):
+
+def process_file(args):
+    in_path, rel, input_dir, output_dir = args
+    out_path = os.path.join(output_dir, rel)
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    stream = decrypt_reverse_1999(in_path)
+    with open(out_path, 'wb') as f_out:
+        f_out.write(stream.read())
+
+
+def batch_decrypt_multiprocess(input_dir, output_dir, num_processes=None):
+    # 收集所有待处理文件
+    file_list = []
     for root, _, files in os.walk(input_dir):
         for name in files:
             in_path = os.path.join(root, name)
             rel = os.path.relpath(in_path, input_dir)
-            out_path = os.path.join(output_dir, rel)
-            os.makedirs(os.path.dirname(out_path), exist_ok=True)
+            file_list.append((in_path, rel, input_dir, output_dir))
 
-            stream = decrypt_reverse_1999(in_path)
-            with open(out_path, 'wb') as f_out:
-                f_out.write(stream.read())
+    # 根据可用CPU和文件数量决定进程数
+    if num_processes is None:
+        num_processes = min(cpu_count(), len(file_list))
+
+    print(f"Starting decryption with {num_processes} processes...")
+    with Pool(processes=num_processes) as pool:
+        pool.map(process_file, file_list)
+
+    print('All done.')
+
 
 if __name__ == '__main__':
-    input_dir  = r"D:\Dataset_Game\com.bluepoch.m.en.reverse1999\RAW\configs\language"
-    output_dir = r"D:\Dataset_Game\com.bluepoch.m.en.reverse1999\RAW\configs\language_dec"
+    input_dir = r"D:\Dataset_Game\com.bluepoch.m.en.reverse1999\RAW\bundles"
+    output_dir = r"D:\Dataset_Game\com.bluepoch.m.en.reverse1999\RAW\bundles_dec"
     os.makedirs(output_dir, exist_ok=True)
-    batch_decrypt(input_dir, output_dir)
-    print('All done.')
+
+    batch_decrypt_multiprocess(input_dir, output_dir)

@@ -4,8 +4,8 @@ import shutil
 from tqdm import tqdm
 
 input_json_filepath = r'D:\Fuck_galgame\index.json'
-source_folder = r"E:\Games\Galgame\JADE\Love - Destination\__Unpack__\OVK"
-output_folder = r"D:\Fuck_galgame\JADE_Love - Destination"
+source_folder = r"D:\Fuck_galgame\OVK"
+output_folder = r"D:\Dataset_VN_NoScene\Studio Momoka_Ore no Kanojo ga Gachi Hentai Sugiru"
 
 with open(input_json_filepath, 'r', encoding='utf-8') as file:
     dialogues = json.load(file)
@@ -44,7 +44,7 @@ for dialogue in tqdm(dialogues):
         output_data.append({
             'Speaker': dialogue['Speaker'],
             'Text': dialogue['Text'],
-            'Voice': key
+            'Voice': key + '.ogg',
         })
 
 output_json_filepath = os.path.join(output_folder, 'index.json')

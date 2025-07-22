@@ -28,17 +28,33 @@ def lua_2_python(obj):
     return {k: lua_2_python(v) for k, v in obj.items()}
 
 def process_type0(filename, lua, results):
-    pass
-
-def process_type1(filename, lua, results):
-    pass
-
-def process_type2(filename, lua, results):
     with open(filename, 'r', encoding='utf-8') as f:
         data = f.read()
     lua.execute(data)
     python_dict = lua_2_python(lua.globals().ast)
-    python_dict = dict(sorted(python_dict.items(), key=lambda kv: kv[0]))
+    text = python_dict.get("text")
+    if text:
+        for item in text:
+            if isinstance(item, dict):
+                vo = item.get("vo")
+                if vo:
+                    Speaker = item.get('name')
+                    if Speaker:
+                        Speaker = Speaker['name']
+                    else:
+                        continue
+                    Voice = vo[0]['file']
+                    Text = ''.join(i for i in item[1] if isinstance(i, str))
+                    Text = text_cleaning(Text)
+                    
+                    if Speaker and Voice and Text:
+                        results.append({'Speaker': Speaker, 'Voice': Voice, 'Text': Text})
+
+def process_type1(filename, lua, results):
+    with open(filename, 'r', encoding='utf-8') as f:
+        data = f.read()
+    lua.execute(data)
+    python_dict = lua_2_python(lua.globals().ast)
 
     for value in python_dict.values():
         Speaker = Voice = Text = None
@@ -62,8 +78,64 @@ def process_type2(filename, lua, results):
             
             if Speaker and Voice and Text:
                 results.append({'Speaker': Speaker, 'Voice': Voice, 'Text': Text})
-            
-PROCESSORS = {0: process_type0, 1: process_type1, 2: process_type2}
+
+def process_type2(filename, lua, results):
+    with open(filename, 'r', encoding='utf-8') as f:
+        data = f.read()
+    data = "scenario = {}\n" + data
+    lua.execute(data)
+    python_dict = lua_2_python(lua.globals().scenario)
+    for value in python_dict.values():
+        for item in value:
+            if len(item) >= 1:
+                for tag_name in item['tag']:
+                    if isinstance(tag_name, dict) and len(tag_name) >= 3:
+                        if tag_name[1] == 'name':
+                            Speaker = tag_name['0']
+                            Voice = tag_name['1']
+                            Text = ''.join(item['text'])
+                            Text = text_cleaning(Text)
+                            results.append({'Speaker': Speaker, 'Voice': Voice, 'Text': Text})
+
+def process_type3(filename, lua, results):
+    with open(filename, 'r', encoding='utf-8') as f:
+        data = f.read()
+    lua.execute(data)
+    python_dict = lua_2_python(lua.globals().ast)
+    for item in python_dict.values():
+        finding_text = False
+        for entry in item.values():
+            if isinstance(entry, dict):
+                name = entry.get('name')
+                path = entry.get('path')
+                voice = entry.get('voice')
+                text = entry.get('text')
+                file = entry.get('file')
+                if name and voice and text and path and file and (not finding_text):
+                    Speaker = name
+                    Voice = voice
+                    Text = text_cleaning(text)
+                    results.append({'Speaker': Speaker, 'Voice': Voice, 'Text': Text})
+                    break
+                elif name and voice and path and (not text) and (not file) and (not finding_text):
+                    Speaker = name
+                    Voice = voice
+                    finding_text = True
+                elif finding_text and text:
+                    Text = text['ja']
+                    Text = ''.join(i for i in Text if isinstance(i, str))
+                    Text = text_cleaning(Text)
+                    results.append({'Speaker': Speaker, 'Voice': Voice, 'Text': Text})
+                    finding_text = False
+
+
+PROCESSORS = {
+    0: process_type0,
+    1: process_type1,
+    2: process_type2,
+    3: process_type3,
+    }
+
 def main(JA_dir, op_json, force_version):
     lua = LuaRuntime(unpack_returned_tuples=True)
     if force_version not in PROCESSORS:

@@ -1,14 +1,14 @@
-import os
 import re
 import json
 import argparse
+from glob import glob
 from tqdm import tqdm
 
 def parse_args(args=None, namespace=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("-JA", type=str, default=r"D:\Fuck_galgame\script")
     parser.add_argument("-op", type=str, default=r'D:\Fuck_galgame\index.json')
-    parser.add_argument("-ft", type=int, default=0)
+    parser.add_argument("-ft", type=int, default=2)
     return parser.parse_args(args=args, namespace=namespace)
 
 def read_json_file(filepath):
@@ -26,10 +26,7 @@ def text_cleaning(text):
     text = text.replace(r'　', '').replace('♪', '').replace('♥', '').replace('%r', '').replace('\u3000', '')
     return text
 
-def process_type0(_0_JA_data):
-    results = []
-    if _0_JA_data['name'].startswith('dummy'):
-        return results
+def process_type0(_0_JA_data, results):
     if 'scenes' in _0_JA_data:
         for _1_JA_scenes in _0_JA_data['scenes']:
             if 'texts' in _1_JA_scenes:
@@ -46,48 +43,73 @@ def process_type0(_0_JA_data):
                         Text = text_cleaning(text_entry[1])
 
                     results.append({'Speaker': Speaker, 'Voice': Voice, 'Text': Text})
-    return results
 
-def process_type1(jdata):
-    return []
+def process_type1(_0_JA_data, results):
+    if 'scenes' in _0_JA_data:
+        for _1_JA_scenes in _0_JA_data['scenes']:
+            if 'texts' in _1_JA_scenes:
+                for _2_JA_texts in _1_JA_scenes['texts']:
+                    Speaker = Voice = Text = None
+                    if _2_JA_texts[3] is not None:
+                        Speaker = _2_JA_texts[3][0]['name']
+                        Voice = _2_JA_texts[3][0]['voice'].lower()
+                        
+                    Text = text_cleaning(_2_JA_texts[2])
 
-def process_type2(jdata):
-    return []
+                    results.append({'Speaker': Speaker, 'Voice': Voice, 'Text': Text})
+'''
+0 = 'ショコラ'
+1 = None
+2 = [[None, '「お、おはよう……ござい、ます……」'], ['Chocola', '「G-Good morning... to you...」'], ['巧克力', '「早、早安……」']]
+3 = [{'name': 'ショコラ', 'pan': 0, 'type': 0, 'voice': 'A_01_001'}]
+4 = 1744
+5 = ...
+'''
+def process_type2(_0_JA_data, results):
+    if 'scenes' in _0_JA_data:
+        for _1_JA_scenes in _0_JA_data['scenes']:
+            if 'texts' in _1_JA_scenes:
+                for _2_JA_texts in _1_JA_scenes['texts']:
+                    Speaker = Voice = Text = None
+                    if _2_JA_texts[3] is not None:
+                        Speaker = _2_JA_texts[3][0]['name']
+                        Voice = _2_JA_texts[3][0]['voice'].lower()
+                        
+                    Text = text_cleaning(_2_JA_texts[2][0][1])
 
-PROCESSORS = {0: process_type0, 1: process_type1, 2: process_type2}
-def main(ja_dir, op_json, force_type):
-    if force_type not in PROCESSORS:
-        raise ValueError(f"Unsupported type: {force_type}")
+                    results.append({'Speaker': Speaker, 'Voice': Voice, 'Text': Text})
 
-    files = []
-    for r, _, fs in os.walk(ja_dir):
-        for f in fs:
-            if f.endswith('.json') and not f.endswith('.resx.json'):
-                files.append(os.path.join(r, f))
+PROCESSORS = {
+    0:   process_type0,
+    1:   process_type1,
+    2:   process_type2,
+}
+
+def main(JA_dir, op_json, force_version):
+    if force_version not in PROCESSORS:
+        raise ValueError(f"未支持的解析类型: {force_version}")
+    processor = PROCESSORS[force_version]
+
+    filelist = [fn for fn in glob(f"{JA_dir}/**/*.json", recursive=True) if not fn.lower().endswith(".resx.json")]
 
     results = []
-    scene_idx = 0
+    for fn in tqdm(filelist):
+        data = read_json_file(fn)
+        processor(data, results)
+        if not results:
+            continue
 
-    for path in tqdm(files, desc="processing"):
-        jdata = read_json_file(path)
-        items = PROCESSORS[force_type](jdata)
+    seen = set()
+    unique_results = []
+    for entry in results:
+        v = entry.get("Voice")
+        if v and v not in seen:
+            seen.add(v)
+            unique_results.append(entry)
+    results = unique_results
 
-        for line_idx, item in enumerate(items):
-            item['scene'] = scene_idx
-            item['line'] = line_idx
-            results.append(item)
-
-        scene_idx += 1
-
-    with open(op_json, 'w', encoding='utf-8') as fp:
-        json.dump(results, fp, ensure_ascii=False, indent=4)
-
-    out_list = r"D:\Fuck_galgame\files.txt"
-    with open(out_list, 'w', encoding='utf-16-le') as fp:   
-        for item in results:
-            v = item['Voice']
-            if v:
-                fp.write(f"{v}.ogg\n")
+    with open(op_json, 'w', encoding='utf-8') as f:
+        json.dump(results, f, ensure_ascii=False, indent=4)
 
 if __name__ == '__main__':
     cmd = parse_args()

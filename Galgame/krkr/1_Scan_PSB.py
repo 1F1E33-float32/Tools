@@ -14,7 +14,7 @@ def process_files(file_list):
         main(file_path)
 
 if __name__ == '__main__':
-    input_directory_path = r"D:\GAL\#OK\KANADE\Extractor_Output\data"
+    input_directory_path = r"D:\Fuck_galgame\script"
     THREAD_NUM = 20
 
     scn_files = []
