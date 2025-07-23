@@ -214,46 +214,51 @@ if __name__ == "__main__":
     for lang in LANGS:
         result1 = []
         result2 = []
+        # 剧情控制流解析
         for item in extracted_flowstate:
-            voice_flowwstate = flow_audio_map.get(f"{lang}_{item['TidTalk']}")
+            # 不区分性别的音频
+            voice_flowstate = flow_audio_map.get(f"{lang}_{item['TidTalk']}")
             text_flowstate = lang_multi_text.get(f"{lang}_{item['TidTalk']}")
             speaker_flowstate = lang_multi_text.get(f"{lang}_Speaker_{item['WhoId']}_Name")
-            if voice_flowwstate and text_flowstate and speaker_flowstate:
+            if voice_flowstate and text_flowstate and speaker_flowstate:
                 text_flowstate = text_cleaning(text_flowstate, None, lang)
                 speaker_flowstate = speaker_flowstate.replace('?', '？').replace(' ','').replace('"', '').replace(":", " ")
-                result1.append({"WhoId": item['WhoId'], "Speaker": speaker_flowstate, "Voice": voice_flowwstate, "Text": text_flowstate})
-                voice_flowwstate = text_flowstate = speaker_flowstate = None
+                result1.append({"WhoId": item['WhoId'], "Speaker": speaker_flowstate, "Voice": voice_flowstate, "Text": text_flowstate})
+                voice_flowstate = text_flowstate = speaker_flowstate = None
                 continue
 
-            voice_flowwstate_f = flow_audio_map.get(f"{lang}_{item['TidTalk']}_F")
+            #女主或者与女主有关的音频
+            voice_flowstate_f = flow_audio_map.get(f"{lang}_{item['TidTalk']}_F")
             text_flowstate_f = lang_multi_text.get(f"{lang}_{item['TidTalk']}")
             if item['WhoId'] == 83 or item['WhoId'] == 354:
                 speaker_flowstate_f = ROVER_NAME.get(lang)[1]
             else:
                 speaker_flowstate_f = lang_multi_text.get(f"{lang}_Speaker_{item['WhoId']}_Name")
-            if voice_flowwstate_f and text_flowstate_f and speaker_flowstate_f:
+            if voice_flowstate_f and text_flowstate_f and speaker_flowstate_f:
                 text_flowstate_f = text_cleaning(text_flowstate_f, "F", lang)
                 speaker_flowstate_f = speaker_flowstate_f.replace('?', '？').replace(' ','').replace('"', '').replace(":", " ")
-                result1.append({"WhoId": item['WhoId'], "Speaker": speaker_flowstate_f, "Voice": voice_flowwstate_f, "Text": text_flowstate_f})
-                voice_flowwstate_f = text_flowstate_f = speaker_flowstate_f = None
+                result1.append({"WhoId": item['WhoId'], "Speaker": speaker_flowstate_f, "Voice": voice_flowstate_f, "Text": text_flowstate_f})
+                voice_flowstate_f = text_flowstate_f = speaker_flowstate_f = None
 
-            voice_flowwstate_m = flow_audio_map.get(f"{lang}_{item['TidTalk']}_M")
+            # 男主或者与男主有关的音频
+            voice_flowstate_m = flow_audio_map.get(f"{lang}_{item['TidTalk']}_M")
             text_flowstate_m = lang_multi_text.get(f"{lang}_{item['TidTalk']}")
             if item['WhoId'] == 83 or item['WhoId'] == 354:
                 speaker_flowstate_m = ROVER_NAME.get(lang)[0]
             else:
                 speaker_flowstate_m = lang_multi_text.get(f"{lang}_Speaker_{item['WhoId']}_Name")
-            if voice_flowwstate_m and text_flowstate_m and speaker_flowstate_m:
+            if voice_flowstate_m and text_flowstate_m and speaker_flowstate_m:
                 text_flowstate_m = text_cleaning(text_flowstate_m, "M", lang)
                 speaker_flowstate_m = speaker_flowstate_m.replace('?', '？').replace(' ','').replace('"', '').replace(":", " ")
-                result1.append({"WhoId": item['WhoId'], "Speaker": speaker_flowstate_m, "Voice": voice_flowwstate_m, "Text": text_flowstate_m})
-                voice_flowwstate_m = text_flowstate_m = speaker_flowstate_m = None
+                result1.append({"WhoId": item['WhoId'], "Speaker": speaker_flowstate_m, "Voice": voice_flowstate_m, "Text": text_flowstate_m})
+                voice_flowstate_m = text_flowstate_m = speaker_flowstate_m = None
 
         out_path = os.path.join(out_dir, f"{lang}_flowstate.json")
         with open(out_path, "w", encoding="utf-8") as f:
             json.dump(result1, f, ensure_ascii=False, indent=4)
 
-
+        
+        # 角色档案解析
         for item in extracted_favorwords:
             voice_favorwords = favor_audio_map.get(f"{lang}_{item['Voice']}")
             text_favorwords = lang_multi_text.get(f"{lang}_{item['Content']}")
