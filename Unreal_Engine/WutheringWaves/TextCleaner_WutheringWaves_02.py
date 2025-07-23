@@ -222,21 +222,21 @@ if __name__ == "__main__":
             speaker_flowstate = lang_multi_text.get(f"{lang}_Speaker_{item['WhoId']}_Name")
             if voice_flowstate and text_flowstate and speaker_flowstate:
                 text_flowstate = text_cleaning(text_flowstate, None, lang)
-                speaker_flowstate = speaker_flowstate.replace('?', '？').replace(' ','').replace('"', '').replace(":", " ")
+                speaker_flowstate = speaker_flowstate.replace('?', '？').replace(' ','').replace('"', '').replace(":", " ") # 沟槽的Windows的保留字符
                 result1.append({"WhoId": item['WhoId'], "Speaker": speaker_flowstate, "Voice": voice_flowstate, "Text": text_flowstate})
                 voice_flowstate = text_flowstate = speaker_flowstate = None
                 continue
 
-            #女主或者与女主有关的音频
+            # 女主或者与女主有关的音频
             voice_flowstate_f = flow_audio_map.get(f"{lang}_{item['TidTalk']}_F")
             text_flowstate_f = lang_multi_text.get(f"{lang}_{item['TidTalk']}")
-            if item['WhoId'] == 83 or item['WhoId'] == 354:
+            if item['WhoId'] == 83 or item['WhoId'] == 354: # 直接查表会查到漂泊者这一个名字，实际上要分性别处理的，所以手动映射
                 speaker_flowstate_f = ROVER_NAME.get(lang)[1]
             else:
                 speaker_flowstate_f = lang_multi_text.get(f"{lang}_Speaker_{item['WhoId']}_Name")
             if voice_flowstate_f and text_flowstate_f and speaker_flowstate_f:
                 text_flowstate_f = text_cleaning(text_flowstate_f, "F", lang)
-                speaker_flowstate_f = speaker_flowstate_f.replace('?', '？').replace(' ','').replace('"', '').replace(":", " ")
+                speaker_flowstate_f = speaker_flowstate_f.replace('?', '？').replace(' ','').replace('"', '').replace(":", " ") # 沟槽的Windows的保留字符
                 result1.append({"WhoId": item['WhoId'], "Speaker": speaker_flowstate_f, "Voice": voice_flowstate_f, "Text": text_flowstate_f})
                 voice_flowstate_f = text_flowstate_f = speaker_flowstate_f = None
 
@@ -249,7 +249,7 @@ if __name__ == "__main__":
                 speaker_flowstate_m = lang_multi_text.get(f"{lang}_Speaker_{item['WhoId']}_Name")
             if voice_flowstate_m and text_flowstate_m and speaker_flowstate_m:
                 text_flowstate_m = text_cleaning(text_flowstate_m, "M", lang)
-                speaker_flowstate_m = speaker_flowstate_m.replace('?', '？').replace(' ','').replace('"', '').replace(":", " ")
+                speaker_flowstate_m = speaker_flowstate_m.replace('?', '？').replace(' ','').replace('"', '').replace(":", " ") # 沟槽的Windows的保留字符
                 result1.append({"WhoId": item['WhoId'], "Speaker": speaker_flowstate_m, "Voice": voice_flowstate_m, "Text": text_flowstate_m})
                 voice_flowstate_m = text_flowstate_m = speaker_flowstate_m = None
 
