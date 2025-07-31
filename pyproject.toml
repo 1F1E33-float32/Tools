@@ -1,0 +1,13 @@
+[project]
+name = "tools"
+version = "1.0.0"
+description = "game tools"
+requires-python = ">=3.12"
+dependencies = [
+    "av>=15.0.0",
+    "cryptography>=45.0.5",
+    "openpyxl>=3.1.5",
+    "requests>=2.32.4",
+    "selenium>=4.34.2",
+    "tqdm>=4.67.1",
+]

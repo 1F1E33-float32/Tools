@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package assetbundle_info;
+
+message AssetBundleElement {
+  string BundleName   = 1;
+  string Hash         = 2;
+  string Version      = 3;
+  string Category     = 4;
+  uint32 Crc          = 5;
+  repeated string Dependencies = 6;
+  int64 FileSize      = 7;
+}
+
+message AssetBundleInfo {
+  string Version = 1;
+  map<string, AssetBundleElement> Bundles = 2;
+}
