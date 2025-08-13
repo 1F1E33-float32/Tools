@@ -1,0 +1,3 @@
+[submodule "OnlineGame/PyCriCodecs"]
+	path = OnlineGame/PyCriCodecs
+	url = https://github.com/bfloat16/PyCriCodecs
