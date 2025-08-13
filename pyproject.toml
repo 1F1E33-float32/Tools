@@ -5,9 +5,18 @@ description = "game tools"
 requires-python = ">=3.12"
 dependencies = [
     "av>=15.0.0",
+    "chardet>=5.2.0",
     "cryptography>=45.0.5",
+    "lupa>=2.5",
+    "lzss>=0.3",
     "openpyxl>=3.1.5",
+    "regex>=2025.7.34",
     "requests>=2.32.4",
+    "rich>=14.1.0",
     "selenium>=4.34.2",
     "tqdm>=4.67.1",
+    "unitypy>=1.23.0",
+    "unrpa>=2.3.0",
+    "xmltodict>=0.14.2",
+    "xxhash>=3.5.0",
 ]

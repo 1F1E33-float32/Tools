@@ -21,8 +21,13 @@ def main(JA_dir, op_json):
     results = []
 
     for filename in tqdm(filelist):
-        with open(filename, 'r', encoding='cp932') as file:
-            lines = file.readlines()
+        print(filename)
+        try:
+            with open(filename, 'r', encoding='cp932') as file:
+                lines = file.readlines()
+        except:
+            with open(filename, 'r', encoding='euc-jp') as file:
+                lines = file.readlines()
 
         i = 0   
         while i < len(lines):
@@ -30,7 +35,7 @@ def main(JA_dir, op_json):
                 i += 1
                 continue
 
-            voice_match = re.compile(r'\$VOICE,v\\(\w+\.ogg)').search(lines[i])
+            voice_match = re.compile(r'\$VOICE,v\\(\w+\.ogv)').search(lines[i])
             if voice_match:
                 Voice = voice_match.group(1).replace('.ogv', '').replace('.ogg', '')
                 Speaker_id = Voice.split('_')[0]

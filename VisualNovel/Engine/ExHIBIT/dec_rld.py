@@ -43,13 +43,13 @@ def decrypt_file(src_path, dst_path, key_list, xor_key, max_blocks=0x3FF0):
             dst.write(remainder)
 
 if __name__ == '__main__':
-    script_dir    = r"D:\GAL\2015_01\Natsu no Iro no Nostalgia"
+    script_dir    = r"D:\GAL\2020_09\Kagi o Kakushita Kago no Tori -Bird in Cage Hiding the Key-"
+    output_dir    = r"D:\Fuck_galgame\rld_dec"
     key_path      = os.path.join(script_dir, 'key.bin')
     def_key_path  = os.path.join(script_dir, 'key_def.bin')
     xor_path      = os.path.join(script_dir, 'key.txt')
     def_xor_path  = os.path.join(script_dir, 'key_def.txt')
-    input_dir     = r"D:\GAL\2015_01\Natsu no Iro no Nostalgia\rld"
-    output_dir    = r"D:\Fuck_galgame\rld_dec"
+    input_dir     = os.path.join(script_dir, 'rld')
 
     other_keys = read_key(key_path)
     def_keys   = read_key(def_key_path)

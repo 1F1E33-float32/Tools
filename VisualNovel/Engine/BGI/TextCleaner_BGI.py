@@ -9,7 +9,7 @@ def parse_args(args=None, namespace=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("-JA", type=str, default=r"D:\Fuck_galgame\script")
     parser.add_argument("-op", type=str, default=r'D:\Fuck_galgame\index.json')
-    parser.add_argument("-ve", type=int, default=0)
+    parser.add_argument("-ve", type=int, default=1)
     return parser.parse_args(args=args, namespace=namespace)
 
 def get_code_section(code_section):
@@ -39,8 +39,15 @@ def process_type0(code_section, results):
                     break
 
 def process_type1(code_section, results):
-    for item in code_section:
-        pass
+    for index, item in enumerate(code_section):
+        if item[0] == 'OTHER' and index + 2 <= len(code_section):
+            if code_section[index + 1][0] == 'NAME' and code_section[index + 2][0] == 'TEXT':
+                Voice = code_section[index][1].lower()
+                if Voice == 'drawbustface':
+                    pass
+                Speaker = code_section[index + 1][1]
+                Text = text_cleaning(code_section[index + 2][1])
+                results.append({"Speaker": Speaker, "Voice": Voice, "Text": Text})
 
 def process_type2(code_section, results):
     for item in code_section:

@@ -5,7 +5,6 @@ import zlib
 import struct
 import argparse
 from io import BytesIO
-import xmltodict
 
 def parse_args(args=None, namespace=None):
     parser = argparse.ArgumentParser()

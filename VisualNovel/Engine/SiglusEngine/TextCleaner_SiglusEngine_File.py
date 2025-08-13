@@ -5,7 +5,7 @@ from tqdm import tqdm
 
 input_json_filepath = r'D:\Fuck_galgame\index.json'
 source_folder = r"D:\Fuck_galgame\OVK"
-output_folder = r"D:\Dataset_VN_NoScene\Studio Momoka_Ore no Kanojo ga Gachi Hentai Sugiru"
+output_folder = r"D:\Dataset_VN_NoScene\GLOVETY_Einstein Yori Ai o Komete"
 
 with open(input_json_filepath, 'r', encoding='utf-8') as file:
     dialogues = json.load(file)

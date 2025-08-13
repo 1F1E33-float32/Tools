@@ -9,7 +9,7 @@ def move_paired_files(src_dir: Path, dest_dir: Path):
     paired_names = set(acb_map.keys()) & set(awb_map.keys())
     if not paired_names:
         print("未找到任何成对的 .acb 和 .awb 文件。")
-        returnw
+        return
 
     dest_dir.mkdir(parents=True, exist_ok=True)
 
@@ -21,8 +21,8 @@ def move_paired_files(src_dir: Path, dest_dir: Path):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--input_folder', default=Path(r"D:\Dataset_Game\com.bandainamcoent.idolmaster_gakuen\RAW\m_audio"))
-    parser.add_argument('--output_folder', default=Path(r"D:\Dataset_Game\com.bandainamcoent.idolmaster_gakuen\RAW\m_audio_paired"))
+    parser.add_argument('--input_folder', default=Path(r"D:\Dataset_Game\jp.co.cygames.princessconnectredive\RAW\v"))
+    parser.add_argument('--output_folder', default=Path(r"D:\Dataset_Game\jp.co.cygames.princessconnectredive\RAW\v_p"))
     args = parser.parse_args()
 
     src = args.input_folder

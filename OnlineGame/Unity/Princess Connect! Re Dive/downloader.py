@@ -1,13 +1,14 @@
 import time
 import xxhash
 import requests
+from requests.adapters import HTTPAdapter
 import argparse
 from pathlib import Path
 from dataclasses import dataclass
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from rich.progress import (BarColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn, TimeRemainingColumn)
 
-BASE_RES_ROOT = "https://prd-priconne-redive.akamaized.net/dl/Resources/10063900/Jpn"
+BASE_RES_ROOT = "https://prd-priconne-redive.akamaized.net/dl/Resources/10064800/Jpn"
 
 MANIFEST_ROOT = f"{BASE_RES_ROOT}/AssetBundles/Android"
 MANIFEST_FILE = f"{MANIFEST_ROOT}/manifest/manifest_assetmanifest"
@@ -42,6 +43,8 @@ def file_xxh64(path):
 
 def create_session():
     sess = requests.Session()
+    sess.mount('http://', HTTPAdapter(max_retries=99))
+    sess.mount('https://', HTTPAdapter(max_retries=99))
     return sess
 
 def fetch_text(sess, url):
@@ -104,7 +107,10 @@ def gather_assets(sess):
 
             sub_text = fetch_text(sess, url)
             for p0, _, p2, _, sz in parse_manifest_lines(sub_text.splitlines()):
-                assets.append(AssetRow(p0, p2, sz, cat))
+                if p0.startswith('a/') and 'story' in p0:
+                    assets.append(AssetRow(p0, p2, sz, cat))
+                if p0.startswith('v/'):
+                    assets.append(AssetRow(p0, p2, sz, cat))
             prog.update(task_id, advance=1)
 
     return assets

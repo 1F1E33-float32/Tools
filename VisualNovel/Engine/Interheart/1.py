@@ -28,7 +28,7 @@ def text_cleaning(text):
 
 
 def load_lines(path):
-    with open(path, 'r', encoding='cp932') as f:
+    with open(path, 'r', encoding='utf-8') as f:
         lines = f.readlines()
     return [ln.lstrip() for ln in lines if not ln.startswith('//')]
 

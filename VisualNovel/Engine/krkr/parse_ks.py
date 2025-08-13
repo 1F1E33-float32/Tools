@@ -9,7 +9,7 @@ def parse_args(args=None, namespace=None):
     p = argparse.ArgumentParser()
     p.add_argument("-JA", type=str, default=r"D:\Fuck_galgame\scenario")
     p.add_argument("-op", type=str, default=r'D:\Fuck_galgame\index.json')
-    p.add_argument("-ft", type=float, default=999)
+    p.add_argument("-ft", type=float, default=1)
     return p.parse_args(args=args, namespace=namespace)
 
 def text_cleaning_01(text):
@@ -94,22 +94,22 @@ def process_type0_1(lines, results):
             tmp.append(lines[j])
 
 '''
-[Voice file=RAMUNE_0B_1425] 
+[Voice file=RAMUNE_0B_1425
 [Talk name=美咲]
 「はぁ、はぁはぁ、お待たせっ！／
 大丈夫なの、カナちゃん！？」
-[Hitret]
+[Hitret
 '''
 def process_type0_2(lines, results):
     current_voice = None
 
     for i, line in enumerate(lines):
-        m_voice = re.search(r'\[Voice\s+file=([^\]\s]+)\]', line)
+        m_voice = re.search(r'(?i)\[Voice\s+file="?([^\]\s"]+)"?', line)
         if m_voice:
             current_voice = m_voice.group(1).split('/')[0]
             continue
 
-        m_talk = re.search(r'\[Talk\s+name=([^\]\s]+)\]', line)
+        m_talk  = re.search(r'(?i)\[Talk\s+name="?([^\]\s"]+)"?\]',  line)
         if not m_talk:
             continue
 
@@ -118,7 +118,7 @@ def process_type0_2(lines, results):
 
         tmp = []
         for j in range(i + 1, len(lines)):
-            if lines[j].startswith('[Hitret]'):
+            if lines[j].lower().startswith('[hitret'):
                 Text = text_cleaning_02(''.join(tmp))
                 results.append({
                     "Speaker": Speaker,
@@ -140,9 +140,12 @@ def process_type0_2(lines, results):
 def process_type1(lines, results):
     header_nm_re = re.compile(r'@nm\s+t="([^"]+)"\s+s=([^\s]+)')
     header_saudio_re = re.compile(
-        r'@saudio\s+(?:.*?\s)?t="(?P<speaker>[^"]+)"'
-        r'(?:.*?\s)?bv=(?P<voice>[^\s]+)'
-        r'(?:.*?\s)?back="(?P<text>[^"]+)"'
+        r'@saudio\s+'
+        r't="(?P<speaker>[^"]+)"\s+'
+        r'fv=(?P<voice1>[^\s]+)\s+'
+        r'front="(?P<text1>[^"]+)"\s+'
+        r'bv=(?P<voice2>[^\s]+)\s+'
+        r'back="(?P<text2>[^"]+)"'
     )
 
     i = 0
@@ -153,7 +156,7 @@ def process_type1(lines, results):
 
         if m_nm:
             speaker = m_nm.group(1)
-            voice = m_nm.group(2)
+            voice   = m_nm.group(2)
 
             tmp = []
             i += 1
@@ -172,20 +175,28 @@ def process_type1(lines, results):
                 "Voice": voice,
                 "Text": text
             })
-
             i += 1
             continue
 
         elif m_s:
             speaker = m_s.group('speaker')
-            voice = m_s.group('voice')
-            text_raw = m_s.group('text')
-            text = text_cleaning_02(text_raw)
 
+            # first (front) entry
+            voice1 = m_s.group('voice1')
+            text1  = text_cleaning_02(m_s.group('text1'))
             results.append({
                 "Speaker": speaker,
-                "Voice": voice,
-                "Text": text
+                "Voice": voice1,
+                "Text":   text1
+            })
+
+            # second (back) entry
+            voice2 = m_s.group('voice2')
+            text2  = text_cleaning_02(m_s.group('text2'))
+            results.append({
+                "Speaker": speaker,
+                "Voice": voice2,
+                "Text":   text2
             })
 
             i += 1
@@ -417,6 +428,33 @@ def process_type6(lines, results):
                     "Text":    cleaned
                 })
 
+def process_type6_1(lines, results):
+    current_speaker = None
+    current_voice   = ""
+    expecting_text  = False
+
+    # Header regex now matches voice in double quotes
+    header_re = re.compile(r'^@(?P<Speaker>\S+)\s+voice="(?P<Voice>[^"]*)"')
+
+    for line in lines:
+        m1 = header_re.match(line)
+        if m1:
+            current_speaker = m1.group('Speaker')
+            current_speaker = current_speaker.split('/')[0]
+            current_voice   = m1.group('Voice').split('.')[0]
+            expecting_text  = True
+            continue
+
+        if expecting_text and current_speaker is not None:
+            raw_text = line.strip()
+            cleaned  = text_cleaning_02(raw_text)
+            results.append({
+                "Speaker": current_speaker,
+                "Voice":   current_voice,
+                "Text":    cleaned
+            })
+            expecting_text = False
+
 '''
 [菜穂子 voice=D10750]
 【菜穂子】
@@ -522,6 +560,7 @@ PROCESSORS = {
     4:   process_type4,
     5:   process_type5,
     6:   process_type6,
+    6.1: process_type6_1,
     7:   process_type7,
     999: process_type999
 }
@@ -531,7 +570,7 @@ def main(JA_dir, op_json, force_version):
         raise ValueError(f"未支持的解析类型: {force_version}")
     processor = PROCESSORS[force_version]
 
-    filelist = (glob(f"{JA_dir}/**/*.ks", recursive=True) + glob(f"{JA_dir}/**/*.txt", recursive=True) + glob(f"{JA_dir}/**/*.scn", recursive=True))
+    filelist = (glob(f"{JA_dir}/**/*.ks", recursive=True) + glob(f"{JA_dir}/**/*.ms", recursive=True) + glob(f"{JA_dir}/**/*.scn", recursive=True))
 
     results = []
     for fn in tqdm(filelist):

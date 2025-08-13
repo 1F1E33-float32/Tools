@@ -38,11 +38,11 @@ def main(in_dir, num_threads):
                 total_duration += duration
                 progress.update(total_task, advance=1)
 
-    print(f"Total duration of all audio files: {total_duration:.2f} seconds")
+    print(f"{total_duration:.2f} s  {total_duration/60:.2f}m")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--in_dir", type=str, default=r"D:\\Voice")
+    parser.add_argument("--in_dir", type=str, default=r"D:\Dataset_VN_NoScene\##OnlineGame_Dataset\OnlineGame_Dataset\Reverse1999_KO")
     parser.add_argument("--num_threads", type=int, default=20)
     args = parser.parse_args()
     main(args.in_dir, args.num_threads)

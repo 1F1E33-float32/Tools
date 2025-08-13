@@ -16,7 +16,7 @@ def get_audio_duration(path):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--folder", default=r"D:\Dataset_VN_NoScene\MOONSTONE_Natsu no Iro no Nostalgia")
+    parser.add_argument("--folder", default=r"D:\Dataset_VN_NoScene\##OnlineGame_Dataset\OnlineGame_Dataset\Princess Connect! Re Dive")
     parser.add_argument("--input-json", default="index.json")
     parser.add_argument("--output-json", default="index_with_duration.json")
     args = parser.parse_args()

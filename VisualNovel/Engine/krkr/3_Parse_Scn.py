@@ -6,10 +6,10 @@ from tqdm import tqdm
 
 def parse_args(args=None, namespace=None):
     parser = argparse.ArgumentParser()
-    parser.add_argument("-JA", type=str, default=r"D:\Fuck_galgame\script")
+    parser.add_argument("-JA", type=str, default=r"D:\Fuck_galgame\scn")
     parser.add_argument("-op", type=str, default=r'D:\Fuck_galgame\index.json')
     parser.add_argument("-ol", type=str, default=r'D:\Fuck_galgame\files.txt')
-    parser.add_argument("-ft", type=int, default=0)
+    parser.add_argument("-ft", type=int, default=2)
     return parser.parse_args(args=args, namespace=namespace)
 
 def read_json_file(filepath):
