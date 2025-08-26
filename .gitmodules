@@ -1,3 +1,6 @@
 [submodule "OnlineGame/PyCriCodecs"]
 	path = OnlineGame/PyCriCodecs
 	url = https://github.com/bfloat16/PyCriCodecs
+[submodule "_ThirdParty/nanobind"]
+	path = _ThirdParty/nanobind
+	url = https://github.com/wjakob/nanobind.git
