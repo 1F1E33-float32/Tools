@@ -1,14 +1,15 @@
+import re
 import time
 import xxhash
 import requests
-from requests.adapters import HTTPAdapter
 import argparse
 from pathlib import Path
 from dataclasses import dataclass
+from requests.adapters import HTTPAdapter
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from rich.progress import (BarColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn, TimeRemainingColumn)
 
-BASE_RES_ROOT = "https://prd-priconne-redive.akamaized.net/dl/Resources/10064800/Jpn"
+BASE_RES_ROOT = "https://prd-priconne-redive.akamaized.net/dl/Resources/10065100/Jpn"
 
 MANIFEST_ROOT = f"{BASE_RES_ROOT}/AssetBundles/Android"
 MANIFEST_FILE = f"{MANIFEST_ROOT}/manifest/manifest_assetmanifest"
@@ -107,7 +108,7 @@ def gather_assets(sess):
 
             sub_text = fetch_text(sess, url)
             for p0, _, p2, _, sz in parse_manifest_lines(sub_text.splitlines()):
-                if p0.startswith('a/') and 'story' in p0:
+                if p0.startswith('a/') and re.search(r'storydata_\d+(?:\.[a-zA-Z0-9]+)?$', p0):
                     assets.append(AssetRow(p0, p2, sz, cat))
                 if p0.startswith('v/'):
                     assets.append(AssetRow(p0, p2, sz, cat))

@@ -11,7 +11,7 @@ def clean_file(path):
     print(f"Cleaned: {path}")
 
 if __name__ == "__main__":
-    root_folder = r"D:\Dataset_VN_NoScene\HOOKSOFT_E School Life"
+    root_folder = r"D:\Dataset_VN_NoScene\#OK_20250821"
     for root, _, files in os.walk(root_folder):
         for name in files:
             if name.lower().endswith('.ogg'):

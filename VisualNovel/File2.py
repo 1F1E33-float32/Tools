@@ -14,16 +14,13 @@ def get_audio_duration(path):
             max_t = frame.time
     return max_t
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--folder", default=r"D:\Dataset_VN_NoScene\##OnlineGame_Dataset\OnlineGame_Dataset\Princess Connect! Re Dive")
-    parser.add_argument("--input-json", default="index.json")
-    parser.add_argument("--output-json", default="index_with_duration.json")
-    args = parser.parse_args()
+def process_one_folder(base_dir, input_json, output_json):
+    in_path = os.path.join(base_dir, input_json)
+    out_path = os.path.join(base_dir, output_json)
 
-    base_dir = args.folder
-    in_path = os.path.join(base_dir, args.input_json)
-    out_path = os.path.join(base_dir, args.output_json)
+    if not os.path.isfile(in_path):
+        print(f"[WARN] 子目录缺少 {input_json}: {in_path}")
+        return
 
     with open(in_path, "r", encoding="utf-8") as f:
         data = json.load(f)
@@ -32,7 +29,7 @@ if __name__ == "__main__":
     valid_count = 0
     error_count = 0
 
-    for entry in tqdm(data, ncols=150):
+    for entry in tqdm(data, ncols=150, desc=os.path.basename(base_dir) or base_dir):
         speaker = entry.get("Speaker")
         voice   = entry.get("Voice")
 
@@ -57,7 +54,21 @@ if __name__ == "__main__":
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
 
-    print(f"总条目数: {len(data)}")
-    print(f"成功处理: {valid_count}")
-    print(f"处理失败: {error_count}")
-    print(f"总时长:   {total_duration/60:.2f} 分钟")
+    print(f"[{base_dir}] 总条目数: {len(data)}")
+    print(f"[{base_dir}] 成功处理: {valid_count}")
+    print(f"[{base_dir}] 处理失败: {error_count}")
+    print(f"[{base_dir}] 总时长:   {total_duration/60:.2f} 分钟")
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--folder", default=r"D:\Dataset_VN_NoScene\#OK_20250821")
+    parser.add_argument("--input-json", default="index.json")
+    parser.add_argument("--output-json", default="index_with_duration.json")
+    args = parser.parse_args()
+
+    parent_dir = args.folder
+
+    # 只扫描一层子文件夹
+    for entry in os.scandir(parent_dir):
+        if entry.is_dir():
+            process_one_folder(entry.path, args.input_json, args.output_json)

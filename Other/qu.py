@@ -11,7 +11,7 @@ def query_vndb(name):
         "sort": "title",
         "reverse": True,
         "page": 1,
-        "results": 501
+        "results": 50
     }
     url = "https://api.vndb.org/kana/vn"
     headers = {"Content-Type": "application/json"}
@@ -102,5 +102,5 @@ def main(root_path):
 
 if __name__ == "__main__":
     # Update this to your root folder path
-    root_path = r"D:\Dataset_VN_NoScene\#OK_20250807"
+    root_path = r"D:\Dataset_VN_NoScene\#OK_20250821"
     main(root_path)

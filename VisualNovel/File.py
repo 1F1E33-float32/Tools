@@ -9,7 +9,7 @@ def parse_args(args=None, namespace=None):
     p.add_argument('--audio_ext',  default='.ogg')
     p.add_argument('--audio_dir',  default=r"D:\Fuck_galgame")
     p.add_argument('--index_json', default=r"D:\Fuck_galgame\index.json")
-    p.add_argument('--out_dir',    default=r"D:\Dataset_VN_NoScene\Liquid_Saint Dorei Gakuensai ~Remaster Complete Box~")
+    p.add_argument('--out_dir',    default=r"D:\Dataset_VN_NoScene\Custard_Kokoro Hokenshitsu ~Kimi to Naisho no Counseling~")
     return p.parse_args(args=args, namespace=namespace)
 
 def main(audio_ext, audio_dir, index_path, out_dir):

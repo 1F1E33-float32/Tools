@@ -39,7 +39,7 @@ def main_txt(JA_dir, op_json):
                     continue
                 Speaker = match.group(3).split('＠')[0]
                 seen.add(Voice)
-                if Speaker == None or Voice == None or match.group(4) == None:
+                if Speaker is None or Voice is None or match.group(4) is None:
                     print(f"Error: {filename}")
                     continue
                 results.append({'Speaker': Speaker, 'Voice': Voice.lower(), 'Text': text_cleaning(match.group(4))})
@@ -51,7 +51,7 @@ def main_txt(JA_dir, op_json):
                     continue
                 Speaker = match.group(2).split('＠')[0]
                 seen.add(Voice)
-                if Speaker == None or Voice == None or match.group(3) == None:
+                if Speaker is None or Voice is None or match.group(3) is None:
                     print(f"Error: {filename}")
                     continue
                 results.append({'Speaker': Speaker, 'Voice': Voice.lower(), 'Text': text_cleaning(match.group(3))})

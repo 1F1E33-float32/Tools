@@ -8,7 +8,7 @@ def parse_args(args=None, namespace=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("-JA", type=str, default=r"D:\Fuck_galgame\scenario")
     parser.add_argument("-op", type=str, default=r'D:\Fuck_galgame\index.json')
-    parser.add_argument("-ft", type=int, default=1)
+    parser.add_argument("-ft", type=int, default=0)
     return parser.parse_args(args=args, namespace=namespace)
 
 def text_cleaning(text):

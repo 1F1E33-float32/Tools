@@ -30,7 +30,7 @@ def load_lines(path):
     except (UnicodeDecodeError, TypeError):
         with open(path, 'r', encoding='cp932') as f:
             lines = f.readlines()
-    return [ln.lstrip() for ln in lines]
+    return [ln.lstrip() for ln in lines if not ln.startswith('#')]
 
 
 def process_type0(lines, results):
@@ -56,8 +56,67 @@ def process_type0(lines, results):
                     "Text":    text
                 })
 
+def process_type1(lines, results):
+    current_voice   = None
+    current_speaker = None
+    in_quote        = False
+    quote_buf       = []
+
+    for line in lines:
+        # 1) 语音轨
+        voice_m = re.search(r'cvon\s*\(\s*"([^"]+)"\s*\)', line)
+        if voice_m:
+            current_voice = voice_m.group(1)
+            continue
+
+        # 2) 纯说话人一行（如：[男性アナウンサー]）
+        spk_line_m = re.search(r'^\s*\[([^\]]+)\]\s*$', line)
+        if spk_line_m:
+            current_speaker = spk_line_m.group(1)
+            continue
+
+        # 3) 台词区块
+        if not in_quote:
+            if '「' in line:
+                in_quote = True
+                after_open = line.split('「', 1)[1]
+                # 如果本行就闭合
+                if '」' in after_open:
+                    raw_text = after_open.split('」', 1)[0]
+                    raw_text = re.sub(r'^[\s\u3000]+', '', raw_text, flags=re.MULTILINE)
+                    text = text_cleaning(raw_text)
+                    if text and current_voice and current_speaker:
+                        results.append({
+                            "Speaker": current_speaker,
+                            "Voice":   current_voice,
+                            "Text":    text
+                        })
+                    current_speaker = None
+                    in_quote = False
+                else:
+                    quote_buf = [after_open]
+        else:
+            if '」' in line:
+                before_close = line.split('」', 1)[0]
+                quote_buf.append(before_close)
+                raw_text = '\n'.join(quote_buf)
+                raw_text = re.sub(r'^[\s\u3000]+', '', raw_text, flags=re.MULTILINE)
+                text = text_cleaning(raw_text)
+                if text and current_voice and current_speaker:
+                    results.append({
+                        "Speaker": current_speaker,
+                        "Voice":   current_voice,
+                        "Text":    text
+                    })
+                current_speaker = None
+                in_quote  = False
+                quote_buf = []
+            else:
+                quote_buf.append(line)
+
 PROCESSORS = {
     0:   process_type0,
+    1:   process_type1,
 }
 
 def main(JA_dir, op_json, force_version):

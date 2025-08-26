@@ -47,11 +47,11 @@ def main(JA_dir, op_json, force_type):
     results = []
     match force_type:
         case 0:
-            disassembler = Disassembler(r"Galgame\NeXAS\version_0.yaml")
+            disassembler = Disassembler(r"VisualNovel\Engine\NeXAS\version_0.yaml")
         case 1:
-            disassembler = Disassembler(r"Galgame\NeXAS\version_1.yaml")
+            disassembler = Disassembler(r"VisualNovel\Engine\NeXAS\version_1.yaml")
         case 2:
-            disassembler = Disassembler(r"Galgame\NeXAS\version_2.yaml")
+            disassembler = Disassembler(r"VisualNovel\Engine\NeXAS\version_2.yaml")
     disassembler.load_and_disassemble_global(global_bin)
     for filename in tqdm(filtered_filelist):
         dis_result = disassembler.disassemble(filename)

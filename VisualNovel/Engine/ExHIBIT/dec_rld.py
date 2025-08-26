@@ -43,7 +43,7 @@ def decrypt_file(src_path, dst_path, key_list, xor_key, max_blocks=0x3FF0):
             dst.write(remainder)
 
 if __name__ == '__main__':
-    script_dir    = r"D:\GAL\2020_09\Kagi o Kakushita Kago no Tori -Bird in Cage Hiding the Key-"
+    script_dir    = r"D:\GAL\2025_01\Natsu e no Hakobune III"
     output_dir    = r"D:\Fuck_galgame\rld_dec"
     key_path      = os.path.join(script_dir, 'key.bin')
     def_key_path  = os.path.join(script_dir, 'key_def.bin')
