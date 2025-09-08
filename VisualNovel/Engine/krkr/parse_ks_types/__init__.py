@@ -1,4 +1,4 @@
-from .type0 import process_type0, process_type0_1, process_type0_2, process_type0_3
+from .type0 import process_type0, process_type0_1, process_type0_2, process_type0_3, process_type0_4
 from .type1 import process_type1, process_type1_1, process_type1_2
 from .type2 import process_type2
 from .type3 import process_type3, process_type3_1
@@ -10,7 +10,7 @@ from .type999 import process_type999
 from .text_cleaning import text_cleaning_01, text_cleaning_02
 
 __all__ = [
-    'process_type0', 'process_type0_1', 'process_type0_2', 'process_type0_3',
+    'process_type0', 'process_type0_1', 'process_type0_2', 'process_type0_3', 'process_type0_4',
     'process_type1', 'process_type1_1', 'process_type1_2',
     'process_type2',
     'process_type3', 'process_type3_1',

@@ -3,7 +3,7 @@ import json
 import shutil
 
 audio_root = r'D:\Fuck_galgame'
-output_root = r'D:\Fuck_galgame\f_'
+output_root = r'D:\Dataset_VN_NoScene\CIRCUS_Princess Party'
 
 with open(r'D:\Fuck_galgame\index.json', 'r', encoding='utf-8') as f:
     index_data = json.load(f)

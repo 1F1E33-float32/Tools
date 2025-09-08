@@ -9,13 +9,14 @@ def parse_args(args=None, namespace=None):
     parser.add_argument("-JA", type=str, default=r"D:\Fuck_galgame\scn")
     parser.add_argument("-op", type=str, default=r'D:\Fuck_galgame\index.json')
     parser.add_argument("-ol", type=str, default=r'D:\Fuck_galgame\files.txt')
-    parser.add_argument("-ft", type=int, default=0)
+    parser.add_argument("-ot", type=str, default=r'D:\Fuck_galgame\appconfig.tjs')  # 新增：输出 tjs
+    parser.add_argument("-ft", type=int, default=2)
     return parser.parse_args(args=args, namespace=namespace)
 
 def read_json_file(filepath):
     with open(filepath, 'r', encoding='utf-8') as file:
         return json.load(file)
-    
+
 def text_cleaning(text):
     text = text.replace('\n', '').replace(r'\n', '')
     text = re.sub(r"%[^;]*;|#[^;]*;|%\d+|\[[^[\\\/]*\]", '', text)
@@ -43,7 +44,7 @@ def process_type0(_0_JA_data, results):
                     if _2_JA_texts[2] is not None:
                         Speaker = _2_JA_texts[2][0]['name']
                         Voice = _2_JA_texts[2][0]['voice'].lower()
-                        
+
                     text_entry = _2_JA_texts[1][0]
                     if len(text_entry) > 3 and text_entry[3]:
                         Text = text_cleaning(text_entry[3])
@@ -61,10 +62,11 @@ def process_type1(_0_JA_data, results):
                     if _2_JA_texts[3] is not None:
                         Speaker = _2_JA_texts[3][0]['name']
                         Voice = _2_JA_texts[3][0]['voice'].lower()
-                        
+
                     Text = text_cleaning(_2_JA_texts[2])
 
                     results.append({'Speaker': Speaker, 'Voice': Voice, 'Text': Text})
+
 '''
 0 = 'ショコラ'
 1 = None
@@ -82,18 +84,33 @@ def process_type2(_0_JA_data, results):
                     if _2_JA_texts[3] is not None:
                         Speaker = _2_JA_texts[3][0]['name']
                         Voice = _2_JA_texts[3][0]['voice'].lower()
-                        
+
                     Text = text_cleaning(_2_JA_texts[2][0][1])
 
                     results.append({'Speaker': Speaker, 'Voice': Voice, 'Text': Text})
 
 PROCESSORS = {
-    0:   process_type0,
-    1:   process_type1,
-    2:   process_type2,
+    0: process_type0,
+    1: process_type1,
+    2: process_type2,
 }
 
-def main(JA_dir, op_json, ol, force_version):
+def write_appconfig_tjs(results, tjs_path):
+    voices = [item['Voice'] for item in results if item.get('Voice')]
+    lines = []
+    for v in voices:
+        lines.append("try")
+        lines.append("{")
+        lines.append(f'Scripts.evalStorage("{v}.ogg");')
+        lines.append("}")
+        lines.append("catch{}")
+        lines.append("")
+    content = "\n".join(lines).rstrip() + "\n"
+
+    with open(tjs_path, 'w', encoding='utf-8-sig') as fp:
+        fp.write(content)
+
+def main(JA_dir, op_json, ol, ot, force_version):
     if force_version not in PROCESSORS:
         raise ValueError(f"未支持的解析类型: {force_version}")
     processor = PROCESSORS[force_version]
@@ -119,12 +136,14 @@ def main(JA_dir, op_json, ol, force_version):
     with open(op_json, 'w', encoding='utf-8') as f:
         json.dump(results, f, ensure_ascii=False, indent=4)
 
-    with open(ol, 'w', encoding='utf-16-le') as fp:   
+    with open(ol, 'w', encoding='utf-16-le') as fp:
         for item in results:
             v = item['Voice']
             if v:
                 fp.write(f"{v}.ogg\n")
 
+    write_appconfig_tjs(results, ot)
+
 if __name__ == '__main__':
     cmd = parse_args()
-    main(cmd.JA, cmd.op, cmd.ol, cmd.ft)
+    main(cmd.JA, cmd.op, cmd.ol, cmd.ot, cmd.ft)

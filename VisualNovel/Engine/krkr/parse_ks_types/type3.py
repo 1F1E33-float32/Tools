@@ -54,7 +54,7 @@ def process_type3_1(lines, results):
     while i < n:
         line = lines[i].strip()
 
-        m_name = re.match(r'^\[name\s+text=([^\]]+)\]', line)
+        m_name = re.match(r'^\[name\s+(?:text|chara)=([^\]]+)\]', line)
         if not m_name:
             i += 1
             continue
@@ -64,7 +64,7 @@ def process_type3_1(lines, results):
 
         i += 1
         while i < n:
-            m_voice = re.match(r'^\[voice\s+storage="([^"]+)"\]', lines[i].strip())
+            m_voice = re.match(r'^\[voice\s+storage=["\']([^"\']+)["\']', lines[i].strip())
             if m_voice:
                 voice = m_voice.group(1)
                 i += 1
@@ -75,9 +75,19 @@ def process_type3_1(lines, results):
             continue
 
         buf = []
-        while i < n and not lines[i].startswith('['):
-            buf.append(lines[i])
-            i += 1
+        while i < n:
+            if lines[i].startswith('['):
+                if re.match(r'^\[(?:font\s+size=\d+|resetwait)\]', lines[i].strip()):
+                    # 跳过font标签和resetwait标签，不添加到buffer
+                    i += 1
+                    continue
+                else:
+                    # 遇到其他[标签，停止循环
+                    break
+            else:
+                # 普通文本行，添加到buffer
+                buf.append(lines[i])
+                i += 1
 
         raw_text = ''.join(buf).replace('[r]', '\n').strip()
 

@@ -102,5 +102,5 @@ def main(root_path):
 
 if __name__ == "__main__":
     # Update this to your root folder path
-    root_path = r"D:\Dataset_VN_NoScene\#OK_20250821"
+    root_path = r"D:\Dataset_VN_NoScene\#OK_20250828"
     main(root_path)

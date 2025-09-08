@@ -14,7 +14,7 @@ def process_files(file_list):
         main(file_path)
 
 if __name__ == '__main__':
-    input_directory_path = r"D:\Fuck_galgame\scn"
+    input_directory_path = r"E:\Games\Galgame\Frontwing\Loca Love - Densha x Doukyuusei\KrkrExtract_Output\vol2"
     THREAD_NUM = 20
 
     scn_files = []

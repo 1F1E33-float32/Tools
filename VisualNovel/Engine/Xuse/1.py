@@ -1,145 +1,153 @@
-#!/usr/bin/env python3
+import strfile
 import os
-import struct
-from io import BytesIO
+import json
+import argparse
+from struct import unpack
 
-def dec_str(bs: bytes) -> str:
-    """XOR‐decode a byte sequence with 0x53 and decode as CP932."""
-    b2 = bytes(b ^ 0x53 for b in bs)
-    return b2.decode('cp932', errors='replace')
+def args_parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--input", type=str, default=r"D:\\Fuck_galgame\\script")
+    parser.add_argument("--output", type=str, default=r"D:\\Fuck_galgame\\index.json")
+    return parser.parse_args()
 
-def ext_bin(data: bytes) -> str:
-    stm = BytesIO(data)
-    # header: skip, then fun1_len, fun2_len, fun3_len, code_len, res_len
-    fun1_len, fun2_len, fun3_len, code_len, res_len = struct.unpack(
-        '<12xI4xI4xIII', stm.read(0x28)
-    )
 
-    # skip over tables + padding + two ints
-    stm.seek(fun1_len + fun2_len + fun3_len + 0x28 + 8)
+def text_cleaning(text):
+    text = text.replace('『', '').replace('』', '').replace('「', '').replace('」', '').replace('（', '').replace('）', '')
+    text = text.replace('　', '').replace('／', '').replace('\n', '')
+    return text
+
+
+def decStr(astr):
+    a = ""
+    for i in astr:
+        a += chr(i ^ 0x53)
+    return a
+
+
+def _decode_cp932_from_raw(s):
+    return s.encode("raw-unicode-escape").decode("932", errors="replace")
+
+
+def split_voice_idx(idx):
+    tail = idx % 100000
+    pack_num, nth0 = divmod(tail - 1, 256)
+    return f"v{pack_num:04d}", f"{nth0 + 1:04d}"
+
+
+def extBin(stm):
+    fun1_len, fun2_len, fun3_len, code_len, res_len = unpack("12xI4xI4xIII", stm.read(0x28))
+    stm.seek(fun1_len + fun2_len + fun3_len + 0x28 + 4 * 2)
     res_off = stm.tell() + code_len + 2
-
-    out_lines = []
+    results = []
     while stm.tell() < res_off - 2:
-        op, count, unk1, unk2 = struct.unpack('<Hhhh', stm.read(8))
-        # TEXT BOX
+        op, count, mne1, mne2 = unpack("Hhhh", stm.read(8))
         if op == 1:
-            num_strs = unk1
-            # first Arg → could be voice code
-            a_type, a_len, a_off = struct.unpack('<HHI', stm.read(8))
-            str_idx = voice_idx = None
-            if a_type == 5:
-                # this is a string like 'v0000#0001'
-                raw = data[res_off + a_off: res_off + a_off + a_len]
-                code_str = dec_str(raw)
-                # split into text index and voice index
-                if '#' in code_str:
-                    parts = code_str.lstrip('v').split('#', 1)
-                    str_idx, voice_idx = parts[0], parts[1]
-            elif a_type == 4:
-                val = a_off
-                str_idx   = str(val & 0xFFFF)
-                voice_idx = str(val >> 16)
-            elif a_type == 3:
-                buf = data[res_off + a_off: res_off + a_off + 8]
-                idx0, idx1 = struct.unpack('<II', buf)
-                str_idx, voice_idx = str(idx0), str(idx1)
-
-            # read actual strings
-            texts = []
-            for _ in range(num_strs):
-                t, length, offset = struct.unpack('<HHI', stm.read(8))
-                if t != 5:
-                    raise ValueError(f"Expected string arg, got type {t}")
-                raw = data[res_off + offset: res_off + offset + length]
-                texts.append(dec_str(raw))
-
-            header = f"[idx:{str_idx}, voice:{voice_idx}]"
-            out_lines.append(header + " " + "\n".join(texts))
-
-        # NAME + TEXT BOX
+            if count - mne1 != 1:
+                continue
+            # 读取并解析 arg1：编号 与 声音 idx
+            arg_type1, len1_1, off1 = unpack("HHI", stm.read(8))
+            _num_id = -1
+            voice_idx = -1
+            if arg_type1 == 3:
+                _num_id, voice_idx = unpack("II", stm[res_off + off1 : res_off + off1 + 8])
+            elif arg_type1 == 4:
+                _num_id = off1
+            text_parts = []
+            for j in range(mne1):
+                arg_type, len1, off = unpack("HHI", stm.read(8))
+                if arg_type != 5:
+                    continue
+                raw = decStr(stm[res_off + off : res_off + off + len1])
+                text_parts.append(_decode_cp932_from_raw(raw))
+            text = "".join(text_parts).strip()
+            voice = None
+            if voice_idx != -1:
+                pack_name, nth = split_voice_idx(voice_idx)
+                voice = f"{pack_name}_{nth}"
+            if text:
+                results.append({
+                    "Speaker": "？？？",
+                    "Voice":   voice,
+                    "Text":    text,
+                })
         elif op == 0x3C:
-            num_strs = unk1
-            a_type, a_len, a_off = struct.unpack('<HHI', stm.read(8))
-            str_idx = voice_idx = None
-            if a_type == 5:
-                raw = data[res_off + a_off: res_off + a_off + a_len]
-                code_str = dec_str(raw)
-                if '#' in code_str:
-                    parts = code_str.lstrip('v').split('#', 1)
-                    str_idx, voice_idx = parts[0], parts[1]
-            elif a_type == 4:
-                val = a_off
-                str_idx   = str(val & 0xFFFF)
-                voice_idx = str(val >> 16)
-            elif a_type == 3:
-                buf = data[res_off + a_off: res_off + a_off + 8]
-                idx0, idx1 = struct.unpack('<II', buf)
-                str_idx, voice_idx = str(idx0), str(idx1)
-
-            # speaker name
-            t2, l2, o2 = struct.unpack('<HHI', stm.read(8))
-            if t2 != 5:
-                raise ValueError(f"Expected name string, got type {t2}")
-            raw_name = data[res_off + o2: res_off + o2 + l2]
-            name = dec_str(raw_name)
-
-            # remaining texts
-            texts = []
-            for _ in range(num_strs - 1):
-                t, length, offset = struct.unpack('<HHI', stm.read(8))
-                if t != 5:
-                    raise ValueError(f"Expected string arg, got type {t}")
-                raw = data[res_off + offset: res_off + offset + length]
-                texts.append(dec_str(raw))
-
-            header = f"{name}@[idx:{str_idx}, voice:{voice_idx}]"
-            out_lines.append(header + "\n" + "\n".join(texts))
-
-        # CHOICE MENU
+            if count - mne1 != 1 or count < 2:
+                continue
+            # 读取并解析 arg1：编号 与 声音 idx
+            arg_type1, len1_1, off1 = unpack("HHI", stm.read(8))
+            _num_id = -1
+            voice_idx = -1
+            if arg_type1 == 3:
+                _num_id, voice_idx = unpack("II", stm[res_off + off1 : res_off + off1 + 8])
+            elif arg_type1 == 4:
+                _num_id = off1
+            arg_type, len1, off = unpack("HHI", stm.read(8))
+            raw_name = decStr(stm[res_off + off : res_off + off + len1])
+            name = _decode_cp932_from_raw(raw_name)
+            text_parts = []
+            for j in range(mne1 - 1):
+                arg_type, len1, off = unpack("HHI", stm.read(8))
+                if arg_type != 5:
+                    continue
+                raw = decStr(stm[res_off + off : res_off + off + len1])
+                text_parts.append(_decode_cp932_from_raw(raw))
+            text = "".join(text_parts)
+            text = text_cleaning(text)
+            pack_name, nth = split_voice_idx(voice_idx)
+            voice = f"{pack_name}_{nth}"
+            if text:
+                results.append({
+                    "Speaker": name,
+                    "Voice":   voice,
+                    "Text":    text,
+                })
         elif op == 0x64:
-            if count != unk1:
-                raise ValueError("Choice count mismatch")
-            for _ in range(unk1):
-                t, length, offset = struct.unpack('<HHI', stm.read(8))
-                if t != 5:
-                    raise ValueError(f"Expected string arg, got type {t}")
-                raw = data[res_off + offset: res_off + offset + length]
-                out_lines.append(dec_str(raw))
-
-        # OTHER OPS: skip args
+            if count != mne1:
+                continue
+            # 跳过（丢弃）此类文本，但仍然正确前进指针
+            for j in range(mne1):
+                arg_type, len1, off = unpack("HHI", stm.read(8))
+                # 仅消费参数，不输出
+                if arg_type == 5:
+                    _ = stm[res_off + off : res_off + off + len1]
         else:
-            if not (2 <= op <= 9) and count >= 0:
-                stm.seek(count * 8, os.SEEK_CUR)
+            if op not in range(2, 9 + 1) and count >= 0:
+                stm.seek(count * 8, 1)
             elif count < 0:
-                stm.seek(8, os.SEEK_CUR)
+                stm.seek(8, 1)
 
-    return "\r\n".join(out_lines)
+    return results
 
 
-def process_all(
-    rio_dir=r'D:\GAL\2010_01\Kikouyoku Senki Tenkuu no Yumina FD  -ForeverDreams-\DATA\rio',
-    out_dir=r'D:\GAL\2010_01\Kikouyoku Senki Tenkuu no Yumina FD  -ForeverDreams-\DATA\riotxt'
-):
-    os.makedirs(out_dir, exist_ok=True)
+if __name__ == "__main__":
+    args = args_parser()
+    input_dir = args.input
+    output_path = args.output
 
-    for fname in os.listdir(rio_dir):
-        if not fname.lower().endswith('.bin'):
+    results = []
+    if not os.path.isdir(input_dir):
+        raise FileNotFoundError(f"Input directory not found: {input_dir}")
+
+    for binf in os.listdir(input_dir):
+        if not binf.lower().endswith(".bin"):
             continue
+        input_file_path = os.path.join(input_dir, binf)
+        with open(input_file_path, "rb") as fs:
+            stm = strfile.MyStr(fs.read())
+        results.extend(extBin(stm))
 
-        in_path  = os.path.join(rio_dir, fname)
-        out_path = os.path.join(out_dir, fname[:-4] + '.txt')
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
-        with open(in_path, 'rb') as f:
-            data = f.read()
+    seen = set()
+    unique_results = []
+    for entry in results:
+        v = entry.get("Voice")
+        if v and v not in seen:
+            seen.add(v)
+            unique_results.append(entry)
+    results = unique_results
 
-        txt = ext_bin(data)
-        if not txt:
-            continue
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(results, f, ensure_ascii=False, indent=4)
 
-        # write using UTF-8
-        with open(out_path, 'w', encoding='utf-8', errors='replace') as fo:
-            fo.write(txt)
-
-if __name__ == '__main__':
-    process_all()
+    print(f"Wrote {len(results)} entries to {output_path}")

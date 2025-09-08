@@ -5,21 +5,39 @@ from .text_cleaning import text_cleaning_02
 @Talk name=いつみ voice=ITM000020
 「やっぱり昨日渋丘スタジオにいたのって、
 　永倉くんだったんだ。そっか、かなめさんのお手伝いで……」
+
+
+@talk voice=Annna_00000 name=杏奈
+そんな訳ないでしょう。
+@hitret
 '''
 def process_type0(lines, results):
-    for i, line in enumerate(lines):
-        m = re.search(r'@Talk\s+name=([^\s]+)(?:\s+voice=([^\s]+))?', line)
-        if not m:
-            continue
-        Speaker = m.group(1).split('/')[0]
-        Voice   = m.group(2).split('/')[0] if m.group(2) else None
-        tmp = []
-        for j in range(i + 1, len(lines)):
-            if lines[j].startswith('@Hitret'):
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+
+        if re.search(r'^\s*@talk\b', line, flags=re.IGNORECASE):
+            attrs = dict((k.lower(), v.split('/')[0]) for k, v in re.findall(r'\b(name|voice)=([^\s]+)', line, flags=re.IGNORECASE))
+
+            Speaker = attrs.get('name') or None
+            Voice   = attrs.get('voice') or None
+
+            tmp = []
+            i += 1
+            while i < len(lines):
+                if re.match(r'^\s*@hitret\b', lines[i], flags=re.IGNORECASE):
+                    Text = text_cleaning_02(''.join(tmp))
+                    results.append({"Speaker": Speaker, "Voice": Voice, "Text": Text})
+                    break
+                tmp.append(lines[i])
+                i += 1
+
+            else:
                 Text = text_cleaning_02(''.join(tmp))
                 results.append({"Speaker": Speaker, "Voice": Voice, "Text": Text})
-                break
-            tmp.append(lines[j])
+                return
+        i += 1
+
 
 '''
 [cn name="深青" voice="mio_0089"]
@@ -142,5 +160,29 @@ def process_type0_3(lines, results):
                 "Voice": voice,
                 "Text": text
             })
+
+'''
+[nm t="執事" rt="翠碕" s=aax_0011]「"[gly t="デビルズ・オーガン"][rb t="悪魔の臓器|デビルズ・オーガン"][egly]"の中でも、極めて特殊な部類に入る能力です」[wvl]
+[nm t="睦月" s=mut_0187]「さてな」[np]
+'''
+def process_type0_4(lines, results):
+    nm_re = re.compile(r'\[nm\s+t="([^"]+)"(?:\s+rt="[^"]*")?\s+s=([^\]]+)\]')
     
-    return results
+    for line in lines:
+        m = nm_re.search(line)
+        if not m:
+            continue
+            
+        Speaker = m.group(1)
+        Voice = m.group(2)
+        
+        # 获取标签后的文本内容
+        text_content = line[m.end():]
+        
+        if text_content.strip():
+            Text = text_cleaning_02(text_content)
+            results.append({
+                "Speaker": Speaker,
+                "Voice": Voice,
+                "Text": Text
+            })

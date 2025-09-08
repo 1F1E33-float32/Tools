@@ -9,6 +9,7 @@ from typing import BinaryIO, Iterator, List, Optional
 HDR_SIZE = 56
 MAGIC = b"FPD\x00"
 
+
 def read_cstr(buf: io.BytesIO) -> bytes:
     out = bytearray()
     while True:
@@ -18,6 +19,7 @@ def read_cstr(buf: io.BytesIO) -> bytes:
         out.extend(ch)
     return bytes(out)
 
+
 def xor_inplace(buf: bytearray, key: bytes) -> None:
     if not key:
         return
@@ -26,6 +28,7 @@ def xor_inplace(buf: bytearray, key: bytes) -> None:
     mv = memoryview(buf)
     for i in range(len(mv)):
         mv[i] ^= key[i % klen]
+
 
 @dataclass
 class EntryHdr:
@@ -45,12 +48,8 @@ class EntryHdr:
         return cls(fso, off, size, usize)
 
     def __str__(self) -> str:
-        return (
-            f"filepath: {self.filepath}\n"
-            f"offset: 0x{self.offset:X}\n"
-            f"size: 0x{self.size:X}\n"
-            f"uncompressed_size: 0x{self.uncompressed_size:X}\n"
-        )
+        return f"filepath: {self.filepath}\noffset: 0x{self.offset:X}\nsize: 0x{self.size:X}\nuncompressed_size: 0x{self.uncompressed_size:X}\n"
+
 
 class FPD:
     def __init__(self, file: Path | str, key: bytes):
@@ -183,6 +182,7 @@ class FPD:
             lines.append(f"\nNo.: {i}\n{e}")
         return "\n".join(lines)
 
+
 def parse_args():
     p = argparse.ArgumentParser()
     p.add_argument("--input_dir", default=r"D:\Games\Steam\steamapps\common\Blade\obb")
@@ -190,7 +190,8 @@ def parse_args():
     p.add_argument("--output_dir", default=r"D:\Games\Steam\steamapps\common\Blade\obb")
     return p.parse_args()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     args = parse_args()
     key_path = Path(args.key_bin)
     in_dir = Path(args.input_dir)

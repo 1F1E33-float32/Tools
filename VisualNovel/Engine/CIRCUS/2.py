@@ -12,7 +12,7 @@ def convert_files_chunk(chunk, voice_dir, output_dir, mode):
             output_path = os.path.join(output_dir, os.path.splitext(relative_path)[0] + ".wav")
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
-            cmd = [r"src\CRICUS\vgmstream-win64\vgmstream-cli.exe", "-o", output_path, pcm_path]
+            cmd = [r"VisualNovel\Engine\CIRCUS\vgmstream-win64\vgmstream-cli.exe", "-o", output_path, pcm_path]
             result = subprocess.run(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             if result.returncode != 0:
                 print(f"Error converting {pcm_path}:\n{result.stderr}")
@@ -54,6 +54,6 @@ if __name__ == "__main__":
     output_directory = r"D:\Fuck_galgame\VOICE"
     thread_count = 20
 
-    chosen_mode = "ogg"
+    chosen_mode = "vgm"
 
     convert_pcm_to_wav(voice_directory, output_directory, max_workers=thread_count, mode=chosen_mode)

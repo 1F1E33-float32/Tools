@@ -54,6 +54,7 @@ ScriptInfo.infos = [
     ScriptInfo("ffexa",    0x7B69, (0x00, 0x28), (0x29, 0x2E), (0x2F, 0x49), (0x4A, 0x4D), (0x4E, 0xFF), 0x43),
     ScriptInfo("ffexs",    0x7B6B, (0x00, 0x28), (0x29, 0x2E), (0x2F, 0x4B), (0x4C, 0x4F), (0x50, 0xFF), 0x43),
     ScriptInfo("ef",       0x466A, (0x00, 0x28), (0x2A, 0x2F), (0x30, 0x4A), (0x4B, 0x4E), (0x4F, 0xFF), 0x46),
+
     ScriptInfo("ktlep",    0x6E69, (0x00, 0x28), (0x29, 0x2E), (0x2F, 0x49), (0x4A, 0x4D), (0x4E, 0xFF), 0x45),
     ScriptInfo("dcmems",   0x315D, (0x00, 0x2B), (0xFF, 0xFF), (0x2C, 0x45), (0x46, 0x49), (0x4A, 0xFF), 0x42),
     ScriptInfo("dcdx",     0x7769, (0x00, 0x28), (0x29, 0x2E), (0x2F, 0x49), (0x4A, 0x4D), (0x4E, 0xFF), 0x45),
@@ -73,6 +74,8 @@ ScriptInfo.infos = [
     ScriptInfo("ds",       0x9F9A, (0x00, 0x38), (0x39, 0x4A), (0x41, 0x5E), (0x5F, 0x62), (0x63, 0xFF), 0x54),
     ScriptInfo("dsif",     0xA1A1, (0x00, 0x39), (0x3A, 0x42), (0x43, 0x60), (0x61, 0x64), (0x65, 0xFF), 0x56),
     ScriptInfo("tmpl",     0xA6B4, (0x00, 0x3B), (0x3A, 0x46), (0x46, 0x67), (0x68, 0x6E), (0x6D, 0xFF), 0x5C),
+
+    ScriptInfo("pp",       0x5B6C, (0x00, 0x28), (0x29, 0x2F), (0x30, 0x4A), (0x4B, 0x4E), (0x4F, 0xFF), 0x46),
 ]
 
 class Token:
@@ -187,8 +190,8 @@ class ScriptProcessor:
         return self.asmbin != b"" and len(self.tokens) > 0
 
 if __name__ == "__main__":
-    mes_dir = r"E:\Games\Galgame\CIRCUS\Tenpure!!\Advdata\MES"
-    version = 1
+    mes_dir = r"D:\GAL\2009年3月\Princess Party\AdvData\MES"
+    version = 0
     result = []
     seen = set()
     for file in os.listdir(mes_dir):
@@ -205,13 +208,12 @@ if __name__ == "__main__":
                 match version:
                     case 0:
                         for text in texts:
-                            if not is_VOICE and not is_SPEAKER and text['type'] == "string" and text['param'] == 54:
+                            if not is_VOICE and not is_SPEAKER and text['type'] == "string" and text['param'] == 55:
                                 is_VOICE = True
                                 is_SPEAKER = False
                                 tmp_voice = text['string']
                                 if not tmp_voice.endswith('.wav') and not tmp_voice.endswith('.ogg'):
-                                    tmp_voice = tmp_voice + '.ogg'
-                                tmp_voice = tmp_voice.replace(".wav", ".ogg")
+                                    tmp_voice = tmp_voice + '.wav'
                                 
                             elif is_VOICE and not is_SPEAKER and text["type"] == "encstr" and 70 <= text["param"] <= 80:
                                 is_VOICE = False

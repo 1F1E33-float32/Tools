@@ -61,7 +61,7 @@ def process_one_folder(base_dir, input_json, output_json):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--folder", default=r"D:\Dataset_VN_NoScene\#OK_20250821")
+    parser.add_argument("--folder", default=r"D:\Dataset_VN_NoScene\#OK_20250828")
     parser.add_argument("--input-json", default="index.json")
     parser.add_argument("--output-json", default="index_with_duration.json")
     args = parser.parse_args()

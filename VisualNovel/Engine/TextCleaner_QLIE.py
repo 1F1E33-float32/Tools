@@ -19,9 +19,9 @@ def text_cleaning(text):
     return text
 
 def load_lines(path):
-    with open(path, 'r', encoding='utf-16-le') as f:
+    with open(path, 'r', encoding='cp932') as f:
         lines = f.readlines()
-    return [ln.lstrip() for ln in lines if not (ln.lstrip().startswith('^') or ln.lstrip().startswith('\\'))]
+    return [ln.lstrip() for ln in lines if not (ln.lstrip().startswith('^') or ln.lstrip().startswith('\\') or ln.lstrip().startswith('//'))]
 
 def process_type0(lines, results):
     for line in lines:
@@ -44,6 +44,7 @@ def process_type0(lines, results):
         voice   = m.group('voice').strip()
         speaker = m.group('speaker').strip()
         speaker = speaker.split('＠')[0]
+        speaker = speaker.replace('【', '').replace('】', '')
         text    = m.group('text').strip()
 
         cleaned = text_cleaning(text)
