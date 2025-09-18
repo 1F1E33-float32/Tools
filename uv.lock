@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.12"
 
 [[package]]
@@ -274,6 +274,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/4e/22/f08983d8dc5ade7532149e79d8fca5fba264f496c746aef380bc7e0fc5e6/etcpak-0.9.14-cp37-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:e30357bd3640ca67ac13bba77d580a0cbeba9ca1280d8ccdcbd2ce5bfa49d3e8", size = 3505910, upload-time = "2025-05-28T13:30:54.795Z" },
     { url = "https://files.pythonhosted.org/packages/22/e2/bb9b307ad1f80d72631f672ae271df8da64233ef6c3e4e9e50d4f944cd01/etcpak-0.9.14-cp37-abi3-win32.whl", hash = "sha256:eabc8d3338dff47ed8e5a9fc1ee52c7b62c9236ebb5e71cff2eb509adca73eba", size = 226760, upload-time = "2025-05-28T13:30:56.828Z" },
     { url = "https://files.pythonhosted.org/packages/ef/cf/03b9d52f19a4be0cb92a58c2bf3c37160249f4a14bc79caac55781bcaaca/etcpak-0.9.14-cp37-abi3-win_amd64.whl", hash = "sha256:d0ce48589e6de33374425e4479edde4b4efd34b7898b08e3765e6148204d4671", size = 1113376, upload-time = "2025-05-28T13:30:59.185Z" },
+]
+
+[[package]]
+name = "flatbuffers"
+version = "25.2.10"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/e4/30/eb5dce7994fc71a2f685d98ec33cc660c0a5887db5610137e60d8cbc4489/flatbuffers-25.2.10.tar.gz", hash = "sha256:97e451377a41262f8d9bd4295cc836133415cc03d8cb966410a4af92eb00d26e", size = 22170, upload-time = "2025-02-11T04:26:46.257Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b8/25/155f9f080d5e4bc0082edfda032ea2bc2b8fab3f4d25d46c1e9dd22a1a89/flatbuffers-25.2.10-py2.py3-none-any.whl", hash = "sha256:ebba5f4d5ea615af3f7fd70fc310636fbb2bbd1f566ac0a23d98dd412de50051", size = 30953, upload-time = "2025-02-11T04:26:44.484Z" },
 ]
 
 [[package]]
@@ -765,6 +774,7 @@ dependencies = [
     { name = "av" },
     { name = "chardet" },
     { name = "cryptography" },
+    { name = "flatbuffers" },
     { name = "lupa" },
     { name = "lzss" },
     { name = "numpy" },
@@ -787,6 +797,7 @@ requires-dist = [
     { name = "av", specifier = ">=15.0.0" },
     { name = "chardet", specifier = ">=5.2.0" },
     { name = "cryptography", specifier = ">=45.0.5" },
+    { name = "flatbuffers", specifier = ">=25.2.10" },
     { name = "lupa", specifier = ">=2.5" },
     { name = "lzss", specifier = ">=0.3" },
     { name = "numpy", specifier = ">=2.3.2" },

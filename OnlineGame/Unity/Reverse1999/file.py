@@ -1,15 +1,16 @@
-import os
-import json
-import shutil
 import argparse
+import json
+import os
+import shutil
+
 
 def copy_and_build(root_dir, index_path, output_dir):
     # Read the master index
-    with open(index_path, 'r', encoding='utf-8') as f:
+    with open(index_path, "r", encoding="utf-8") as f:
         entries = json.load(f)
 
     # Supported languages
-    languages = ['zh', 'en', 'kr', 'jp']
+    languages = ["zh", "en", "kr", "jp"]
 
     for lang in languages:
         lang_root = os.path.join(root_dir, lang)
@@ -18,15 +19,15 @@ def copy_and_build(root_dir, index_path, output_dir):
         lang_index = []
 
         for entry in entries:
-            speaker = entry['Speaker'][lang]
-            voice   = str(entry['Voice'])
-            directory = entry['Directory']
-            text    = entry['Text'][lang]
+            speaker = entry["Speaker"][lang]
+            voice = str(entry["Voice"])
+            directory = entry["Directory"]
+            text = entry["Text"][lang]
 
             # Construct source and destination paths
-            src_file = os.path.join(lang_root, directory, voice + '.wav')
-            dst_dir  = os.path.join(lang_output, speaker)
-            dst_file = os.path.join(dst_dir, voice + '.wav')
+            src_file = os.path.join(lang_root, directory, voice + ".wav")
+            dst_dir = os.path.join(lang_output, speaker)
+            dst_file = os.path.join(dst_dir, voice + ".wav")
 
             # Ensure destination directory exists
 
@@ -36,23 +37,24 @@ def copy_and_build(root_dir, index_path, output_dir):
                 shutil.copy2(src_file, dst_file)
                 # Append to this language's index only if copy succeeded
                 lang_index.append({
-                    'Speaker': speaker,
-                    'Voice': voice + '.wav',
-                    'Text': text,
+                    "Speaker": speaker,
+                    "Voice": voice + ".wav",
+                    "Text": text,
                 })
             else:
                 print(f"[Warning] Missing audio, skipping entry {voice}: {src_file}")
 
         # Write per-language index.json
-        index_out = os.path.join(lang_output, 'index.json')
-        with open(index_out, 'w', encoding='utf-8') as f_out:
+        index_out = os.path.join(lang_output, "index.json")
+        with open(index_out, "w", encoding="utf-8") as f_out:
             json.dump(lang_index, f_out, ensure_ascii=False, indent=2)
         print(f"Wrote {len(lang_index)} entries to {index_out}")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--root',   default=r"D:\Dataset_Game\com.bluepoch.m.en.reverse1999\EXP\audios\Android_WAV")
-    parser.add_argument('--index',  default=r"D:\Dataset_Game\com.bluepoch.m.en.reverse1999\EXP\index.json")
-    parser.add_argument('--output', default=r"D:\Dataset_VN_NoScene\#OK L\1999")
+    parser.add_argument("--root", default=r"D:\Dataset_Game\com.bluepoch.m.en.reverse1999\EXP\audios\Android_WAV")
+    parser.add_argument("--index", default=r"D:\Dataset_Game\com.bluepoch.m.en.reverse1999\EXP\index.json")
+    parser.add_argument("--output", default=r"D:\Dataset_VN_NoScene\#OK L\1999")
     args = parser.parse_args()
     copy_and_build(args.root, args.index, args.output)

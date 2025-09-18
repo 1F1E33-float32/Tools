@@ -4,6 +4,7 @@
 # Python
 __pycache__/
 .venv
+uv.lock
 
 # Nodejs
 node_modules/

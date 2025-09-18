@@ -185,37 +185,52 @@ class FPD:
 
 def parse_args():
     p = argparse.ArgumentParser()
-    p.add_argument("--input_dir", default=r"D:\Games\Steam\steamapps\common\Blade\obb")
+    p.add_argument("--input", default=r"D:\Muv-Luv Tactics\pldep.dat")
     p.add_argument("--key_bin", default=r"D:\Project\Tools\VisualNovel\Engine\FSNr\decryptKey.bin")
-    p.add_argument("--output_dir", default=r"D:\Games\Steam\steamapps\common\Blade\obb")
+    p.add_argument("--output_dir", default=r"D:\Muv-Luv Tactics\EX_pldep")
+    p.add_argument("--single_file", default=True)
     return p.parse_args()
 
 
 if __name__ == "__main__":
     args = parse_args()
     key_path = Path(args.key_bin)
-    in_dir = Path(args.input_dir)
+    input_path = Path(args.input)
     out_dir = Path(args.output_dir)
 
     key = key_path.read_bytes()
-
-    # 选择是否递归扫描
-    bin_iter = in_dir.glob("*.bin")
+    out_dir.mkdir(parents=True, exist_ok=True)
 
     count = 0
-    for bin_path in bin_iter:
-        try:
-            out_dir.mkdir(parents=True, exist_ok=True)
 
-            fpd = FPD(bin_path, key)
-            fpd.dump(out_dir)
-
-            print(f"[OK] {bin_path}  ->  {out_dir}")
-            count += 1
-        except Exception as e:
-            print(f"[FAIL] {bin_path}: {e}")
+    if args.single_file:
+        # 单文件模式
+        if not input_path.is_file():
+            print(f"错误: {input_path} 不是一个文件")
+        else:
+            try:
+                fpd = FPD(input_path, key)
+                fpd.dump(out_dir)
+                print(f"[OK] {input_path}  ->  {out_dir}")
+                count += 1
+            except Exception as e:
+                print(f"[FAIL] {input_path}: {e}")
+    else:
+        # 文件夹模式
+        if not input_path.is_dir():
+            print(f"错误: {input_path} 不是一个文件夹")
+        else:
+            bin_iter = input_path.glob("*.bin")
+            for bin_path in bin_iter:
+                try:
+                    fpd = FPD(bin_path, key)
+                    fpd.dump(out_dir)
+                    print(f"[OK] {bin_path}  ->  {out_dir}")
+                    count += 1
+                except Exception as e:
+                    print(f"[FAIL] {bin_path}: {e}")
 
     if count == 0:
-        print("未找到任何 .bin 文件。")
+        print("未找到任何可处理的 .bin 文件。")
     else:
         print(f"完成：共处理 {count} 个 .bin 文件。")

@@ -3,15 +3,18 @@ import json
 import shutil
 from pathlib import Path
 
-LANGS = ["en", "ko"]
+LANGS = ["en", "ko", "ja", "zh"]
 TYPES = ["favorwords", "flowstate"]
 
+
 def load_json(path: Path):
-    with path.open("r", encoding="utf-8-sig") as f:
+    with path.open("r", encoding="utf-8") as f:
         return json.load(f)
+
 
 def ensure_dir(p: Path):
     p.mkdir(parents=True, exist_ok=True)
+
 
 def main(inp: Path, outp: Path, dry_run: bool = False):
     for lang in LANGS:
@@ -60,10 +63,11 @@ def main(inp: Path, outp: Path, dry_run: bool = False):
                 json.dump(records, f, ensure_ascii=False, indent=4)
             print(f"[OK] {index_path} written. ({len(records)} entries)")
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input", "-i", default=r"D:\Dataset_Game\WutheringWaves\EXP")
-    parser.add_argument("--output", default=r"D:\Dataset_VN_NoScene\#OK L\Wuwa")
+    parser.add_argument("--input", "-i", default=r"E:\Game_Dataset\WutheringWaves\EXP")
+    parser.add_argument("--output", default=r"E:\Game_Dataset\WutheringWaves\OK")
     args = parser.parse_args()
 
     main(Path(args.input), Path(args.output))
