@@ -185,10 +185,10 @@ class FPD:
 
 def parse_args():
     p = argparse.ArgumentParser()
-    p.add_argument("--input", default=r"D:\Muv-Luv Tactics\pldep.dat")
+    p.add_argument("--input", default=r"C:\program files (x86)\steam\steamapps\common\Kimi ga Nozomu Eien\kiminozs\obb")
     p.add_argument("--key_bin", default=r"D:\Project\Tools\VisualNovel\Engine\FSNr\decryptKey.bin")
-    p.add_argument("--output_dir", default=r"D:\Muv-Luv Tactics\EX_pldep")
-    p.add_argument("--single_file", default=True)
+    p.add_argument("--output_dir", default=r"C:\program files (x86)\steam\steamapps\common\Kimi ga Nozomu Eien\kiminozs\EX")
+    p.add_argument("--single_file", default=False)
     return p.parse_args()
 
 

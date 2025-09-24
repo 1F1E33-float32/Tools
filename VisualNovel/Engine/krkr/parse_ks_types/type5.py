@@ -1,16 +1,18 @@
 import re
+
 from .text_cleaning import text_cleaning_02
 
-"""
-@v s=VOICE
-（中间可能有 @se、@flash、@cut 等指令）
-@【Speaker】
-台词行1
-台词行2
-"""
-def process_type5(lines, results):
-    voice_re   = re.compile(r'^@v\s+s=(\S+)')
-    speaker_re = re.compile(r'^@【(.+?)】')
+
+def process_type5_0(lines, results):
+    """
+    @v s=VOICE
+    （中间可能有 @se、@flash、@cut 等指令）
+    @【Speaker】
+    台词行1
+    台词行2
+    """
+    voice_re = re.compile(r"^@v\s+s=(\S+)")
+    speaker_re = re.compile(r"^@【(.+?)】")
 
     i = 0
     n = len(lines)
@@ -36,15 +38,11 @@ def process_type5(lines, results):
                 # 3. 收集后续所有非 @ 开头的台词行
                 text_lines = []
                 k = j + 1
-                while k < n and not lines[k].startswith('@'):
+                while k < n and not lines[k].startswith("@"):
                     text_lines.append(lines[k].strip())
                     k += 1
-                text = text_cleaning_02(''.join(text_lines))
-                results.append({
-                    "Voice": 'cv' + voice,
-                    "Speaker": speaker,
-                    "Text": text
-                })
+                text = text_cleaning_02("".join(text_lines))
+                results.append({"Voice": "cv" + voice, "Speaker": speaker, "Text": text})
                 j = k
                 break
             j += 1

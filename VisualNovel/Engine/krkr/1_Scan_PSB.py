@@ -2,18 +2,19 @@ import os
 import subprocess
 import threading
 
-print_lock = threading.Lock()
 
 def main(file_path):
-    psb_decompile_path = os.path.join(os.path.dirname(__file__), 'PsbDecompile.exe')
+    psb_decompile_path = os.path.join(os.path.dirname(__file__), "PsbDecompile.exe")
     command = [psb_decompile_path, file_path]
     subprocess.run(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
 
 def process_files(file_list):
     for file_path in file_list:
         main(file_path)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     input_directory_path = r"D:\Fuck_Galgame\scn"
     THREAD_NUM = 20
 

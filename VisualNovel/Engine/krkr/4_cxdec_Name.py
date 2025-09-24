@@ -1,6 +1,7 @@
 import os
 import shutil
 
+
 def main():
     src_folder = r"D:\GAL\2025_07\Kioku no Kenban\Extractor_Output\voice"
     dst_folder = r"D:\Fuck_galgame\voice"
@@ -31,7 +32,7 @@ def main():
                 if not line:
                     continue
                 # 每行格式： 文件名,hash值
-                parts = line.split(',')
+                parts = line.split(",")
                 if len(parts) != 2:
                     print(f"跳过格式不对的行: {line}")
                     continue
@@ -57,6 +58,7 @@ def main():
                 print(f"复制 {hash_value} 时发生错误: {e}")
 
     print(f"共复制并重命名了 {copied_count} 个文件到目标文件夹：{dst_folder}")
+
 
 if __name__ == "__main__":
     main()

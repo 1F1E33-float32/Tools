@@ -4,23 +4,33 @@ import argparse
 from tqdm import tqdm
 from glob import glob
 from parse_ks_types import (
-    process_type0, process_type0_1, process_type0_2, process_type0_3, process_type0_4,
-    process_type1, process_type1_1, process_type1_2,
-    process_type2,
-    process_type3, process_type3_1,
-    process_type4,
-    process_type5,
-    process_type6, process_type6_1,
-    process_type7,
+    process_type0_0,
+    process_type0_1,
+    process_type0_2,
+    process_type0_3,
+    process_type0_4,
+    process_type0_5,
+    process_type1_0,
+    process_type1_1,
+    process_type1_2,
+    process_type2_0,
+    process_type2_1,
+    process_type3_0,
+    process_type3_1,
+    process_type4_0,
+    process_type5_0,
+    process_type6_0,
+    process_type6_1,
+    process_type7_0,
     process_type999,
 )
 
 
 def parse_args(args=None, namespace=None):
     p = argparse.ArgumentParser()
-    p.add_argument("-JA", type=str, default=r"D:\Fuck_galgame\scenario")
-    p.add_argument("-op", type=str, default=r"D:\Fuck_galgame\index.json")
-    p.add_argument("-ft", type=float, default=0)
+    p.add_argument("-JA", type=str, default=r"D:\Fuck_VN\scenario")
+    p.add_argument("-op", type=str, default=r"D:\Fuck_VN\index.json")
+    p.add_argument("-ft", type=float, default=0.5)
     return p.parse_args(args=args, namespace=namespace)
 
 
@@ -42,22 +52,24 @@ def load_lines(path):
 
 
 PROCESSORS = {
-    0:   process_type0,
+    0.0: process_type0_0,
     0.1: process_type0_1,
     0.2: process_type0_2,
     0.3: process_type0_3,
     0.4: process_type0_4,
-    1:   process_type1,
+    0.5: process_type0_5,
+    1.0: process_type1_0,
     1.1: process_type1_1,
     1.2: process_type1_2,
-    2:   process_type2,
-    3:   process_type3,
+    2.0: process_type2_0,
+    2.1: process_type2_1,
+    3.0: process_type3_0,
     3.1: process_type3_1,
-    4:   process_type4,
-    5:   process_type5,
-    6:   process_type6,
+    4.0: process_type4_0,
+    5.0: process_type5_0,
+    6.0: process_type6_0,
     6.1: process_type6_1,
-    7:   process_type7,
+    7.0: process_type7_0,
     999: process_type999,
 }
 

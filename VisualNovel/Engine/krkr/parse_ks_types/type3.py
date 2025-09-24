@@ -1,60 +1,57 @@
 import re
+
 from .text_cleaning import text_cleaning_02
 
-'''
-[msgname name=IWATANI]
-[cv str=i075]
-「ま、そりゃそうだわな。誰だって、結局は自分の身がかわいいもんな」
-[np][cm]
-'''
-def process_type3(lines, results):
+
+def process_type3_0(lines, results):
+    """
+    [msgname name=IWATANI]
+    [cv str=i075]
+    「ま、そりゃそうだわな。誰だって、結局は自分の身がかわいいもんな」
+    [np][cm]
+    """
     speaker = None
-    voice   = None
-    buffer  = []
+    voice = None
+    buffer = []
 
     for line in lines:
-        m_name = re.search(r'\[msgname\s+name=([^\]]+)\]', line)
+        m_name = re.search(r"\[msgname\s+name=([^\]]+)\]", line)
         if m_name:
             speaker = m_name.group(1)
             buffer.clear()
             continue
 
-        m_cv = re.search(r'\[cv\s+str=([^\]]+)\]', line)
+        m_cv = re.search(r"\[cv\s+str=([^\]]+)\]", line)
         if m_cv and speaker is not None:
             voice = m_cv.group(1)
             continue
 
         if speaker is not None:
-            if line.startswith('[np]') and '[cm]' in line:
-                raw_text = ''.join(buffer).strip()
+            if line.startswith("[np]") and "[cm]" in line:
+                raw_text = "".join(buffer).strip()
                 Text = text_cleaning_02(raw_text)
-                results.append({
-                    "Speaker": speaker,
-                    "Voice":   voice,
-                    "Text":    Text
-                })
+                results.append({"Speaker": speaker, "Voice": voice, "Text": Text})
                 speaker = None
-                voice   = None
+                voice = None
                 buffer.clear()
             else:
                 buffer.append(line)
 
-    return results
 
-'''
-[name text=ステラ]
-[voice storage="cv_D00061"]
-「あ……アベスターグの支部。[r]
-　お兄ちゃん、せっかくだし寄っていかない？」
-'''
 def process_type3_1(lines, results):
+    """
+    [name text=ステラ]
+    [voice storage="cv_D00061"]
+    「あ……アベスターグの支部。[r]
+    お兄ちゃん、せっかくだし寄っていかない？」
+    """
     i = 0
     n = len(lines)
 
     while i < n:
         line = lines[i].strip()
 
-        m_name = re.match(r'^\[name\s+(?:text|chara)=([^\]]+)\]', line)
+        m_name = re.match(r"^\[name\s+(?:text|chara)=([^\]]+)\]", line)
         if not m_name:
             i += 1
             continue
@@ -76,8 +73,8 @@ def process_type3_1(lines, results):
 
         buf = []
         while i < n:
-            if lines[i].startswith('['):
-                if re.match(r'^\[(?:font\s+size=\d+|resetwait)\]', lines[i].strip()):
+            if lines[i].startswith("["):
+                if re.match(r"^\[(?:font\s+size=\d+|resetwait)\]", lines[i].strip()):
                     # 跳过font标签和resetwait标签，不添加到buffer
                     i += 1
                     continue
@@ -89,13 +86,8 @@ def process_type3_1(lines, results):
                 buf.append(lines[i])
                 i += 1
 
-        raw_text = ''.join(buf).replace('[r]', '\n').strip()
+        raw_text = "".join(buf).replace("[r]", "\n").strip()
 
         Text = text_cleaning_02(raw_text)
 
-        results.append({
-            "Speaker": speaker,
-            "Voice":   voice,
-            "Text":    Text
-        })
-    return results
+        results.append({"Speaker": speaker, "Voice": voice, "Text": Text})
