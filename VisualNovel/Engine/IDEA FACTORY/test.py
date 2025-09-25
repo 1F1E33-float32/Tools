@@ -13,6 +13,8 @@ _RE_NAME_WITH_HONORIFIC = re.compile(rf"#Name\[\d+\](?:{_HONORIFICS})")
 
 def _clean_placeholder_names(text: str) -> str:
     s = text
+    # Strip color tags first: #Color[数字]
+    s = re.sub(r"#Color\[\d+\]", "", s)
 
     # 1) Remove quoted name tokens entirely (including the quotes)
     for rx in _RE_NAME_IN_QUOTES:

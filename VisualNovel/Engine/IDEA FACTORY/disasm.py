@@ -1,10 +1,12 @@
+# Reference: https://github.com/robbie01/stcm2-asm
+
 import base64
 import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-from stcm2 import Action, ParameterKind
+from stcm2 import STCM2_MAGIC, Action, ParameterKind
 from stcm2 import from_bytes as stcm2_from_bytes
 
 
@@ -86,7 +88,17 @@ def _decode_utf8_with_hex_replacement(buf: bytes) -> str:
 
 
 def decode_with_hex_replacement(buf: bytes) -> str:
-    # Only UTF-8 is used in Rust code
+    # Try UTF-8 first
+    try:
+        return buf.decode("utf-8", "strict")
+    except UnicodeDecodeError:
+        pass
+    # Then try CP932 (Windows-31J)
+    try:
+        return buf.decode("cp932", "strict")
+    except UnicodeDecodeError:
+        pass
+    # Fallback to robust UTF-8-like decode with hex replacement
     return _decode_utf8_with_hex_replacement(buf)
 
 
@@ -373,17 +385,38 @@ def disassemble_to_json(file_bytes: bytes) -> str:
     tag = stcm2.tag.decode("utf-8", "ignore").rstrip("\x00")
 
     code_start: Dict[str, List[dict]] = {}
+    # Keep track of the current (most recent) function so we can
+    # append subsequent unlabeled chunks (e.g., after a return)
+    # to the same function instead of starting a new one.
+    last_fn: Optional[str] = None
 
     for chunk in chunk_actions(stcm2.actions):
-        # Determine function name (first non-empty label in chunk, else fn_{addr})
+        # Determine function name for this chunk.
+        # Rule:
+        #  - If the first non-empty label in the chunk is not a local_* label,
+        #    start a new function with that name.
+        #  - Otherwise (no label or only local_*), append to last_fn if present;
+        #    if none, fallback to fn_{addr} for the first chunk encountered.
         fname: Optional[str] = None
+        first_nonlocal_label: Optional[str] = None
         if chunk:
             for _, act in chunk:
                 lb = act.label(print_junk)
-                if lb is not None and len(lb) > 0:
-                    fname = label_to_string(lb)
+                if lb is None or len(lb) == 0:
+                    continue
+                name = label_to_string(lb)
+                if not name.startswith("local_"):
+                    first_nonlocal_label = name
                     break
-            if fname is None:
+        if first_nonlocal_label is not None:
+            fname = first_nonlocal_label
+        else:
+            # No non-local label found in this chunk
+            if last_fn is not None:
+                fname = last_fn
+            else:
+                # As a very first chunk without a function label,
+                # create a synthetic function name.
                 fname = f"fn_{chunk[0][0]:X}"
 
         inst_list: List[dict] = []
@@ -452,7 +485,17 @@ def disassemble_to_json(file_bytes: bytes) -> str:
                     "params": build_params(),
                 })
 
-        code_start[fname] = inst_list
+        # Append to existing function if already present; otherwise create it.
+        if fname in code_start:
+            code_start[fname].extend(inst_list)
+        else:
+            code_start[fname] = inst_list
+
+        # Update last_fn only when we actually saw a non-local function label
+        # in this chunk; otherwise keep it as-is so subsequent unlabeled chunks
+        # continue appending to the same function.
+        if first_nonlocal_label is not None:
+            last_fn = fname
 
     out = {
         "tag": tag,
@@ -464,11 +507,25 @@ def disassemble_to_json(file_bytes: bytes) -> str:
 
 def run(in_dir: Path) -> None:
     in_dir = Path(in_dir)
-    for path in in_dir.rglob("*.dat"):
+    for path in in_dir.rglob("*"):
         if not path.is_file():
             continue
-        file_bytes = path.read_bytes()
-        text = disassemble_to_string(file_bytes)
-        json_s = disassemble_to_json(file_bytes)
-        path.with_suffix(".txt").write_text(text, encoding="utf-8")
-        path.with_suffix(".json").write_text(json_s, encoding="utf-8")
+        try:
+            with open(path, "rb") as f:
+                header = f.read(len(STCM2_MAGIC))
+            if header != STCM2_MAGIC:
+                continue
+
+            file_bytes = path.read_bytes()
+            try:
+                text = disassemble_to_string(file_bytes)
+                json_s = disassemble_to_json(file_bytes)
+            except Exception:
+                # Header matched but parsing failed; skip this file
+                continue
+
+            path.with_suffix(".txt").write_text(text, encoding="utf-8")
+            path.with_suffix(".json").write_text(json_s, encoding="utf-8")
+        except Exception:
+            # IO or other unexpected error; skip file
+            continue

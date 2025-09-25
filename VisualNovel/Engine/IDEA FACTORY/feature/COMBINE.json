@@ -1,0 +1,184 @@
+{
+  "pattern": [
+    {
+      "action": "call",
+      "params": [
+        {
+          "type": "DataPointer",
+          "string": "def_name"
+        },
+        {
+          "type": "Value",
+          "value": 4294967074
+        }
+      ]
+    },
+    {
+      "action": "opcode",
+      "target": "0x3",
+      "params": [
+        {
+          "type": "Value",
+          "value": 4294967074
+        },
+        {
+          "type": "DataPointer",
+          "u32": 4,
+          "u32_type": 0
+        },
+        {
+          "type": "DataPointer",
+          "u32": 1,
+          "u32_type": 0
+        },
+        {
+          "type": "ActionRef",
+          "addr": 230124
+        }
+      ]
+    },
+    {
+      "action": "opcode",
+      "target": "0x3",
+      "params": [
+        {
+          "type": "Value",
+          "value": 4294967040
+        },
+        {
+          "type": "DataPointer",
+          "u32": 5,
+          "u32_type": 0
+        },
+        {
+          "type": "DataPointer",
+          "u32": 0,
+          "u32_type": 0
+        },
+        {
+          "type": "ActionRef",
+          "addr": 229948
+        }
+      ]
+    },
+    {
+      "action": "call",
+      "params": [
+        {
+          "type": "Value",
+          "value": 4294967040
+        },
+        {
+          "type": "DataPointer",
+          "u32": 0,
+          "u32_type": 0
+        }
+      ]
+    },
+    {
+      "action": "call",
+      "params": [
+        {
+          "type": "Value",
+          "value": 4294967041
+        }
+      ]
+    },
+    {
+      "action": "call",
+      "params": [
+        {
+          "type": "Value",
+          "value": 4294967042
+        }
+      ]
+    },
+    {
+      "action": "call",
+      "params": [
+        {
+          "type": "Value",
+          "value": 4294967043
+        }
+      ]
+    },
+    {
+      "action": "opcode",
+      "target": "0x6",
+      "params": [
+        {
+          "type": "ActionRef",
+          "addr": 230452
+        }
+      ]
+    },
+    {
+      "action": "opcode",
+      "target": "0x3",
+      "params": [
+        {
+          "type": "Value",
+          "value": 4294967044
+        },
+        {
+          "type": "DataPointer",
+          "u32": 5,
+          "u32_type": 0
+        },
+        {
+          "type": "DataPointer",
+          "u32": 0,
+          "u32_type": 0
+        },
+        {
+          "type": "ActionRef",
+          "addr": 230320
+        }
+      ]
+    },
+    {
+      "action": "call",
+      "params": [
+        {
+          "type": "Value",
+          "value": 4294967044
+        },
+        {
+          "type": "DataPointer",
+          "u32": 0,
+          "u32_type": 0
+        }
+      ]
+    },
+    {
+      "action": "call",
+      "params": [
+        {
+          "type": "Value",
+          "value": 4294967045
+        }
+      ]
+    },
+    {
+      "action": "call",
+      "params": [
+        {
+          "type": "Value",
+          "value": 4294967046
+        }
+      ]
+    },
+    {
+      "action": "call",
+      "params": [
+        {
+          "type": "Value",
+          "value": 4294967047
+        }
+      ]
+    },
+    {
+      "action": "return"
+    }
+  ]
+}
