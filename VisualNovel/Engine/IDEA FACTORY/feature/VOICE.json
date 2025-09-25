@@ -12,19 +12,6 @@
     },
     {
       "action": "return"
-    },
-    {
-      "action": "call",
-      "target": "<pattern1>",
-      "params": [
-        {
-          "type": "Value",
-          "value": 4294967041
-        }
-      ]
-    },
-    {
-      "action": "return"
     }
   ],
   "pattern1": [

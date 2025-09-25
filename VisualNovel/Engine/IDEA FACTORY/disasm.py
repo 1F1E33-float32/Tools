@@ -385,39 +385,23 @@ def disassemble_to_json(file_bytes: bytes) -> str:
     tag = stcm2.tag.decode("utf-8", "ignore").rstrip("\x00")
 
     code_start: Dict[str, List[dict]] = {}
-    # Keep track of the current (most recent) function so we can
-    # append subsequent unlabeled chunks (e.g., after a return)
-    # to the same function instead of starting a new one.
     last_fn: Optional[str] = None
 
     for chunk in chunk_actions(stcm2.actions):
-        # Determine function name for this chunk.
-        # Rule:
-        #  - If the first non-empty label in the chunk is not a local_* label,
-        #    start a new function with that name.
-        #  - Otherwise (no label or only local_*), append to last_fn if present;
-        #    if none, fallback to fn_{addr} for the first chunk encountered.
+        if not chunk:
+            continue
+        head_addr, head_act = chunk[0]
+        head_label_bytes = head_act.label(print_junk)
         fname: Optional[str] = None
-        first_nonlocal_label: Optional[str] = None
-        if chunk:
-            for _, act in chunk:
-                lb = act.label(print_junk)
-                if lb is None or len(lb) == 0:
-                    continue
-                name = label_to_string(lb)
-                if not name.startswith("local_"):
-                    first_nonlocal_label = name
-                    break
-        if first_nonlocal_label is not None:
-            fname = first_nonlocal_label
-        else:
-            # No non-local label found in this chunk
-            if last_fn is not None:
-                fname = last_fn
-            else:
-                # As a very first chunk without a function label,
-                # create a synthetic function name.
-                fname = f"fn_{chunk[0][0]:X}"
+        if head_label_bytes:
+            head_label = label_to_string(head_label_bytes).strip()
+            if not head_label.startswith("local_"):
+                fname = head_label
+        if fname is None:
+            fname = last_fn or f"fn_{head_addr:X}"
+        # Final guard: never allow a local_* name to become a function key.
+        if fname.strip().startswith("local_"):
+            fname = last_fn or f"fn_{head_addr:X}"
 
         inst_list: List[dict] = []
 
@@ -485,16 +469,16 @@ def disassemble_to_json(file_bytes: bytes) -> str:
                     "params": build_params(),
                 })
 
-        # Append to existing function if already present; otherwise create it.
         if fname in code_start:
             code_start[fname].extend(inst_list)
         else:
             code_start[fname] = inst_list
 
-        # Update last_fn only when we actually saw a non-local function label
-        # in this chunk; otherwise keep it as-is so subsequent unlabeled chunks
-        # continue appending to the same function.
-        if first_nonlocal_label is not None:
+        if head_label_bytes:
+            head_label = label_to_string(head_label_bytes).strip()
+            if not head_label.startswith("local_"):
+                last_fn = fname
+        if last_fn is None:
             last_fn = fname
 
     out = {

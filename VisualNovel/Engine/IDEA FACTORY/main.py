@@ -7,7 +7,7 @@ from disasm import run as disasm_run
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("in_dir", type=Path)
+    parser.add_argument("--in_dir", type=Path, default=Path(r"D:\Fuck_VN\script"))
     args = parser.parse_args()
 
     disasm_run(args.in_dir)
