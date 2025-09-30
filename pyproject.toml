@@ -12,6 +12,7 @@ dependencies = [
     "lzss>=0.3",
     "numpy>=2.3.2",
     "openpyxl>=3.1.5",
+    "pandas>=2.3.2",
     "pefile>=2024.8.26",
     "regex>=2025.7.34",
     "requests>=2.32.4",

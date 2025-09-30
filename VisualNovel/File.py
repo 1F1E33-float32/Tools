@@ -8,10 +8,10 @@ from tqdm import tqdm
 
 def parse_args(args=None, namespace=None):
     p = argparse.ArgumentParser()
-    p.add_argument("--audio_ext", default=".hca")
+    p.add_argument("--audio_ext", default=".ogg")
     p.add_argument("--audio_dir", default=r"D:\Fuck_VN\voice")
     p.add_argument("--index_json", default=r"D:\Fuck_VN\index.json")
-    p.add_argument("--out_dir", default=r"E:\VN_Dataset\TMP_DATA\Design Factory Co., Ltd_Code Realize ~Sousei no Himegimi~")
+    p.add_argument("--out_dir", default=r"E:\VN_Dataset\TMP_DATA\Yuzusoft_Senren Banka")
     return p.parse_args(args=args, namespace=namespace)
 
 

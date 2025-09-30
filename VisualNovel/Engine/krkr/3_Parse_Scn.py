@@ -8,11 +8,11 @@ from tqdm import tqdm
 
 def parse_args(args=None, namespace=None):
     parser = argparse.ArgumentParser()
-    parser.add_argument("-JA", type=str, default=r"D:\Fuck_galgame\scn")
-    parser.add_argument("-op", type=str, default=r"D:\Fuck_galgame\index.json")
-    parser.add_argument("-ol", type=str, default=r"D:\Fuck_galgame\files.txt")
-    parser.add_argument("-ot", type=str, default=r"D:\Fuck_galgame\appconfig.tjs")
-    parser.add_argument("-ft", type=int, default=1)
+    parser.add_argument("-JA", type=str, default=r"D:\Fuck_VN\scn")
+    parser.add_argument("-op", type=str, default=r"D:\Fuck_VN\index.json")
+    parser.add_argument("-ol", type=str, default=r"D:\Fuck_VN\files.txt")
+    parser.add_argument("-ot", type=str, default=r"D:\Fuck_VN\appconfig.tjs")
+    parser.add_argument("-ft", type=int, default=2)
     return parser.parse_args(args=args, namespace=namespace)
 
 
@@ -49,6 +49,7 @@ def process_type0(_0_JA_data, results):
                     if _2_JA_texts[2] is not None:
                         Speaker = _2_JA_texts[2][0]["name"]
                         Voice = _2_JA_texts[2][0]["voice"].lower()
+                        Voice = Voice.split('|')[0]
 
                     text_entry = _2_JA_texts[1][0]
                     if len(text_entry) > 3 and text_entry[3]:
@@ -114,6 +115,7 @@ def write_appconfig_tjs(results, tjs_path):
         lines.append("}")
         lines.append("catch{}")
         lines.append("")
+    lines.append("System.exit();")
     content = "\n".join(lines).rstrip() + "\n"
 
     with open(tjs_path, "w", encoding="utf-8-sig") as fp:

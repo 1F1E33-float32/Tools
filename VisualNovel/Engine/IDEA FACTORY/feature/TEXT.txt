@@ -1,0 +1,13 @@
+pattern:
+    call <pattern1>, FFFFFF00
+    return
+
+pattern1:
+    raw 11, =0, =1
+    raw FFFFFF14, 80000000, =0
+    raw 226, =101, 80000000, FFFFFF00, =0, =0, =0, =0, =0
+    raw 12
+    return
+
+    raw 226, =200, =0, =0, =0, =0, =0, =0, =0
+    return

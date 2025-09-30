@@ -15,7 +15,7 @@ def process_files(file_list):
 
 
 if __name__ == "__main__":
-    input_directory_path = r"D:\Fuck_Galgame\scn"
+    input_directory_path = r"D:\Fuck_VN\scn"
     THREAD_NUM = 20
 
     scn_files = []

@@ -1,0 +1,19 @@
+pattern:
+    call <pattern1>, FFFFFF00
+    return
+
+    call <all>, FFFFFF00
+    return
+
+    call <all>, FFFFFF00
+    return
+
+    call <all>, FFFFFF00
+    return
+
+    call <pattern1>, FFFFFF01
+    return
+
+pattern1:
+    raw 226, =301, =0, FFFFFF00, =1, =2, =0, =0, =0
+    return
