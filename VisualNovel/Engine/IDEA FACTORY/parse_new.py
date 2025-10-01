@@ -6,10 +6,10 @@ from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 from tqdm import tqdm
 
-VOICE_FUNC_LIST = ["fn_14D7C", "fn_15274", "fn_152A4", "fn_18154"]
-SPEAKER_FUNC_LIST = ["fn_105C8", "fn_105F8", "fn_12648"]
-TEXT_FUNC_LIST = ["fn_11E3C", "fn_FD88", "fn_FECC", "fn_FEFC"]
-COMBINE_FUNC_LIST = ["fn_33CC8", "fn_3B278"]
+VOICE_FUNC_LIST = ["fn_24A60", "fn_24C78"]
+SPEAKER_FUNC_LIST = ["fn_17A48"]
+TEXT_FUNC_LIST = ["fn_172A0"]
+COMBINE_FUNC_LIST = ["fn_4B0D4"]
 
 FUNCDEF_TYPE0 = {
     "VOICE_FUNC": VOICE_FUNC_LIST,
@@ -193,7 +193,7 @@ def make_processor_type0():
         voice_num = _is_voice_block(insts[i], VOICE_FUNC)
         if voice_num is None:
             return i, []
-        voice = f"{voice_num:06d}"
+        voice = f"{voice_num:07d}"
         speaker = "？？？"
         speaker_id: Optional[int] = None
 
@@ -242,7 +242,7 @@ def make_processor_type1():
         voice_num = _is_voice_block(insts[j], VOICE_FUNC)
         if voice_num is None:
             return i, []
-        voice = f"{voice_num:06d}"
+        voice = f"{voice_num:07d}"
         j += 1
 
         text_parts: List[str] = []
@@ -299,7 +299,7 @@ def make_processor_type2():
             return i, []  # skip cases where second voice is 0 or missing
 
         text2 = text_cleaning(_clean_placeholder_names(t2))
-        voice2 = f"{v2:06d}"
+        voice2 = f"{v2:07d}"
 
         out: List[Tuple[str, Optional[int], str, str]] = []
         if text2:

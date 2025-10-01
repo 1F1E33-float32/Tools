@@ -199,9 +199,6 @@ def find_peer_mess(bin_path: str) -> Optional[str]:
 
 
 def load_proc_names(root: str) -> Dict[int, str]:
-    """Parse adv/adv.c to build the proc id -> name map using set_proc order.
-    Returns empty dict if not found.
-    """
     proc_map: Dict[int, str] = {}
     adv_c = os.path.join(root, "adv", "adv.c")
     if not os.path.isfile(adv_c):
@@ -328,7 +325,6 @@ def _try_load_name_table(db_scripts_path: Optional[str]) -> Optional[List[str]]:
             return out
 
         sheets = _parse_local(db_scripts_path)
-        # Find NAME sheet — commonly labeled '登場人物'
         name_rows: Optional[List[List[Any]]] = None
         for nm, rows in sheets:
             if nm and (nm == "登場人物" or "登場人物" in nm or nm.lower().startswith("name")):
@@ -344,7 +340,6 @@ def _try_load_name_table(db_scripts_path: Optional[str]) -> Optional[List[str]]:
 
 
 def _try_load_voc_table(db_scripts_path: Optional[str]) -> Optional[List[Tuple[str, str, int]]]:
-    """Return list indexed by voc id: (name_prefix, subfolder, group)."""
     if not db_scripts_path or not os.path.isfile(db_scripts_path):
         return None
     try:
@@ -367,7 +362,6 @@ def _try_load_voc_table(db_scripts_path: Optional[str]) -> Optional[List[Tuple[s
                         out.append((name, path, group))
                     return out
         else:
-            # Minimal fallback using inline parser from _try_load_name_table
             pass
     except Exception:
         return None

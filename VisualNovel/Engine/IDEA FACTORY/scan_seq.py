@@ -7,11 +7,11 @@ from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
 def parse_args(args=None, namespace=None):
     p = argparse.ArgumentParser()
-    p.add_argument("-JA", type=str, default=r"D:\\Fuck_VN\\script", help="包含脚本 JSON 的目录")
+    p.add_argument("-JA", type=str, default=r"D:\\Fuck_VN\\script")
     return p.parse_args(args=args, namespace=namespace)
 
 
-FEATURE_DIR = Path(__file__).parent / "feature"
+FEATURE_DIR = Path(__file__).parent / "feature" / "真紅の焔 真田忍法帳 for Nintendo Switch"
 
 
 def _iter_instruction_lists(doc: Dict[str, Any]) -> Iterable[Tuple[str, List[Dict[str, Any]]]]:
