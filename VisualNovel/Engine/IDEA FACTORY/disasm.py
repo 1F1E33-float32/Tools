@@ -22,7 +22,7 @@ class StringType:
 
 
 def autolabel(prefix: str, addr: int) -> bytes:
-    return f"{prefix}_{addr:X}".encode("ascii")
+    return f"{prefix}_0x{addr:X}".encode("ascii")
 
 
 def _decode_utf8_with_hex_replacement(buf: bytes) -> str:
@@ -259,7 +259,7 @@ def disassemble_to_string(file_bytes: bytes) -> str:
         for addr, act in chunk:
             line_parts: List[str] = []
             if show_address:
-                line_parts.append(f"{addr:06X} ")
+                line_parts.append(f"0x{addr:06X} ")
 
             label_bytes = act.label(print_junk)
             if label_bytes is not None:
@@ -276,7 +276,7 @@ def disassemble_to_string(file_bytes: bytes) -> str:
             elif (not act.call) and act.opcode == 0 and len(act.params) == 0:
                 line_parts.append("return")
             else:
-                line_parts.append(f"raw {act.opcode:X}")
+                line_parts.append(f"raw 0x{act.opcode:X}")
 
             data = act.data
             pos = 0
@@ -312,7 +312,7 @@ def disassemble_to_string(file_bytes: bytes) -> str:
 
             for p in act.params:
                 if p.kind == ParameterKind.VALUE:
-                    line_parts.append(f", {p.value:X}")
+                    line_parts.append(f", 0x{p.value:X}")
                 elif p.kind == ParameterKind.ACTION_REF:
                     tgt = stcm2.actions.get(p.value)
                     if tgt is None or tgt.label(print_junk) is None:
@@ -326,9 +326,9 @@ def disassemble_to_string(file_bytes: bytes) -> str:
                         prefix = "" if s.type_() == 0 else "@"
                         n = s.u32 if s.u32 is not None else 0
                         if n < 0x10000000:
-                            line_parts.append(f", {prefix}={n}")
+                            line_parts.append(f", {prefix}=0x{n:X}")
                         else:
-                            line_parts.append(f", {prefix}={n:X}h")
+                            line_parts.append(f", {prefix}=0x{n:X}h")
                     else:
                         sdec = decode_with_hex_replacement(s.data or b"")
                         # Escape
@@ -344,7 +344,7 @@ def disassemble_to_string(file_bytes: bytes) -> str:
                                 escaped.append(ch)
                         line_parts.append(', "' + "".join(escaped) + '"')
                 elif p.kind == ParameterKind.GLOBAL_DATA_POINTER:
-                    line_parts.append(f", [global_data+{p.value}]")
+                    line_parts.append(f", [global_data+0x{p.value:X}]")
 
             if print_junk and junk:
                 j64 = base64.b64encode(junk).decode("ascii").rstrip("=")
@@ -398,10 +398,10 @@ def disassemble_to_json(file_bytes: bytes) -> str:
             if not head_label.startswith("local_"):
                 fname = head_label
         if fname is None:
-            fname = last_fn or f"fn_{head_addr:X}"
+            fname = last_fn or f"fn_0x{head_addr:X}"
         # Final guard: never allow a local_* name to become a function key.
         if fname.strip().startswith("local_"):
-            fname = last_fn or f"fn_{head_addr:X}"
+            fname = last_fn or f"fn_0x{head_addr:X}"
 
         inst_list: List[dict] = []
 
@@ -435,17 +435,18 @@ def disassemble_to_json(file_bytes: bytes) -> str:
                 params_json: List[dict] = []
                 for p in act.params:
                     if p.kind == ParameterKind.VALUE:
-                        params_json.append({"type": "Value", "value": p.value})
+                        params_json.append({"type": "Value", "value": f"0x{p.value:X}"})
                     elif p.kind == ParameterKind.ACTION_REF:
-                        params_json.append({"type": "ActionRef", "addr": p.value})
+                        params_json.append({"type": "ActionRef", "addr": f"0x{p.value:X}"})
                     elif p.kind == ParameterKind.GLOBAL_DATA_POINTER:
-                        params_json.append({"type": "GlobalDataPointer", "offset": p.value})
+                        params_json.append({"type": "GlobalDataPointer", "offset": f"0x{p.value:X}"})
                     elif p.kind == ParameterKind.DATA_POINTER:
                         s = data_pos.get(p.value)
                         if s is None:
                             raise ValueError("param references non-string")
                         if s.kind == "U32":
-                            params_json.append({"type": "DataPointer", "u32": s.u32, "u32_type": s.type_()})
+                            u32_val = s.u32 if s.u32 is not None else 0
+                            params_json.append({"type": "DataPointer", "u32": f"0x{u32_val:X}", "u32_type": s.type_()})
                         else:
                             sdec = decode_with_hex_replacement(s.data or b"")
                             params_json.append({"type": "DataPointer", "string": sdec})
