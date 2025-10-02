@@ -7,6 +7,7 @@ from typing import Dict, List, Optional, Tuple
 STCM2_MAGIC = b"STCM2"
 STCM2_TAG_LENGTH = 32 - len(STCM2_MAGIC)
 GLOBAL_DATA_MAGIC = b"GLOBAL_DATA\x00"
+GLOBAL_DATA_OFFSET = len(STCM2_MAGIC) + STCM2_TAG_LENGTH + 12 * 4 + len(GLOBAL_DATA_MAGIC)
 CODE_START_MAGIC = b"CODE_START_\x00"
 EXPORT_DATA_MAGIC = b"EXPORT_DATA\x00"
 
@@ -54,33 +55,29 @@ class Parameter:
     value: int
 
     @staticmethod
-    def action_ref(addr: int) -> "Parameter":
+    def action_ref(addr: int):
         return Parameter(ParameterKind.ACTION_REF, addr)
 
     @staticmethod
-    def data_pointer(offset: int) -> "Parameter":
+    def data_pointer(offset: int):
         return Parameter(ParameterKind.DATA_POINTER, offset)
 
     @staticmethod
-    def value(v: int) -> "Parameter":
+    def value(v: int):
         return Parameter(ParameterKind.VALUE, v)
 
     @staticmethod
-    def global_data_pointer(offset: int) -> "Parameter":
+    def global_data_pointer(offset: int):
         return Parameter(ParameterKind.GLOBAL_DATA_POINTER, offset)
 
     @staticmethod
-    def parse(triple: Tuple[int, int, int], data_addr: int, data_len: int, global_data_len: int) -> "Parameter":
-        # In Rust patterns, `0x40000000 | 0xff000000` is an OR-pattern, i.e.,
-        # it matches either 0x40000000 or 0xff000000. Mirror that here.
+    def parse(triple: Tuple[int, int, int], data_addr: int, data_len: int, global_data_len: int):
         def is_sentinel(v: int) -> bool:
             return v in (0x40000000, 0xFF000000)
 
         a, b, c = triple
         gdo = GLOBAL_DATA_OFFSET
-        # Follow Rust match arms exactly
         if a == 0xFFFFFF41 and is_sentinel(c):
-            # [0xffffff41, addr, SENT]
             return Parameter.action_ref(b)
         if is_sentinel(b) and is_sentinel(c) and data_addr <= a < data_addr + data_len:
             return Parameter.data_pointer(a - data_addr)
@@ -180,14 +177,7 @@ def from_bytes(file_bytes: bytes) -> Stcm2:
             a = file.get_u32_le()
             b = file.get_u32_le()
             c = file.get_u32_le()
-            params.append(
-                Parameter.parse(
-                    (a, b, c),
-                    addr + 16 + 12 * nparams,
-                    length - 16 - 12 * nparams,
-                    int(global_len),
-                )
-            )
+            params.append(Parameter.parse((a, b, c), addr + 16 + 12 * nparams, length - 16 - 12 * nparams, int(global_len)))
 
         ndata = length - 16 - 12 * nparams
         data = file.split_to(ndata)
@@ -213,7 +203,3 @@ def from_bytes(file_bytes: bytes) -> Stcm2:
         act.export = export
 
     return Stcm2(tag=tag, global_data=global_data, actions=actions)
-
-
-# Derived constant after parser is loaded
-GLOBAL_DATA_OFFSET = len(STCM2_MAGIC) + STCM2_TAG_LENGTH + 12 * 4 + len(GLOBAL_DATA_MAGIC)

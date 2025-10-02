@@ -11,7 +11,7 @@ def parse_args(args=None, namespace=None):
     return p.parse_args(args=args, namespace=namespace)
 
 
-FEATURE_DIR = Path(__file__).parent / "feature" / "真紅の焔 真田忍法帳 for Nintendo Switch"
+FEATURE_DIR = Path(__file__).parent / "feature" / "悠久のティアブレイド -Lost Chronicle-"
 
 
 def _iter_instruction_lists(doc: Dict[str, Any]) -> Iterable[Tuple[str, List[Dict[str, Any]]]]:
@@ -29,9 +29,6 @@ def _iter_instruction_lists(doc: Dict[str, Any]) -> Iterable[Tuple[str, List[Dic
 def _param_like(a: Any, b: Any) -> bool:
     # Deep comparison with special handling for ActionRef
     if isinstance(b, dict):
-        # Wildcard parameter in pattern matches anything
-        if b.get("type") == "Any":
-            return True
         # If pattern says ActionRef, only require candidate to be ActionRef (ignore addr)
         if b.get("type") == "ActionRef":
             return isinstance(a, dict) and a.get("type") == "ActionRef"
@@ -69,9 +66,6 @@ def _inst_matches(inst: Dict[str, Any], pat: Dict[str, Any], doc: Dict[str, Any]
         # optional nested pattern reference via target like "<pattern1>"
         pt = pat.get("target")
         if isinstance(pt, str) and pt.startswith("<") and pt.endswith(">"):
-            # Special wildcard: <all> means accept any call target without nesting
-            if pt == "<all>":
-                return True
             sub_name = pt[1:-1]
             sub_seq = pattern_set.get(sub_name)
             if not sub_seq:
@@ -103,9 +97,6 @@ def _load_feature_set(name: str) -> Dict[str, List[Dict[str, Any]]]:
     .txt format is a lightweight DSL, e.g.:
 
         pattern:
-            call <all>, FFFFFF00
-            return
-
             raw 11, =0, =1
             raw 11, =0, =1
             call <pattern1>, FFFFFF00
@@ -193,10 +184,6 @@ def _parse_params(param_str: str) -> List[Dict[str, Any]]:
         # Allow inline comments after params using '#'
         if part.startswith("#"):
             break
-        # Wildcard parameter
-        if part.lower() == "<all>" or part.lower() == "<any>":
-            out.append({"type": "Any"})
-            continue
         # Explicit ActionRef (ignore label/addr in pattern)
         if part.startswith("[") and part.endswith("]"):
             out.append({"type": "ActionRef"})
@@ -261,7 +248,7 @@ def _parse_feature_txt(text: str) -> Dict[str, List[Dict[str, Any]]]:
             opcode = _parse_number(op_str, prefer_hex=True)
             insts.append({
                 "action": "opcode",
-                "target": f"0x{opcode:X}",
+                "target": opcode,
                 "params": params,
             })
             continue
@@ -270,17 +257,13 @@ def _parse_feature_txt(text: str) -> Dict[str, List[Dict[str, Any]]]:
             body = line[5:].strip()
             target: Optional[str] = None
             params_str = ""
-            # Optional target like <all> or <pattern1>
+            # Optional target like <pattern1>
             if body.startswith("<"):
                 # find closing '>' then optional comma
                 end = body.find(">")
                 if end != -1:
                     tname = body[1:end].strip()
-                    if tname.lower() == "all":
-                        # wildcard: omit target (or keep as <all>)
-                        target = None
-                    else:
-                        target = f"<{tname}>"
+                    target = f"<{tname}>"
                     params_str = body[end+1:].lstrip()
                     if params_str.startswith(","):
                         params_str = params_str[1:].lstrip()
@@ -337,26 +320,41 @@ def find_matches_in_file(path: Path, pattern_set: Dict[str, List[Dict[str, Any]]
     return results
 
 
+def _load_all_features_for_category(category: str) -> List[Dict[str, List[Dict[str, Any]]]]:
+    """Load all feature files for a category (e.g., VOICE0.txt, VOICE1.txt, etc.)"""
+    features = []
+    index = 0
+    while True:
+        feature_name = f"{category}{index}"
+        patset = _load_feature_set(feature_name)
+        if not patset:
+            break
+        features.append(patset)
+        index += 1
+    return features
+
+
 def main(JA_dir: str) -> None:
     ja_path = Path(JA_dir)
     files = sorted(ja_path.rglob("*.json"))
 
-    patterns_map: Dict[str, Dict[str, List[Dict[str, Any]]]] = {
-        "VOICE": _load_feature_set("VOICE"),
-        "SPEAKER": _load_feature_set("SPEAKER"),
-        "TEXT": _load_feature_set("TEXT"),
-        "COMBINE": _load_feature_set("COMBINE"),
-    }
+    # Load all feature files for each category
+    categories = ["VOICE", "SPEAKER", "TEXT", "COMBINE"]
+    patterns_map: Dict[str, List[Dict[str, List[Dict[str, Any]]]]] = {}
 
-    found: Dict[str, Set[str]] = {"VOICE": set(), "SPEAKER": set(), "TEXT": set(), "COMBINE": set()}
+    for category in categories:
+        patterns_map[category] = _load_all_features_for_category(category)
+
+    found: Dict[str, Set[str]] = {cat: set() for cat in categories}
 
     for f in files:
-        for kind, patset in patterns_map.items():
-            if not patset:
-                continue
-            ms = find_matches_in_file(f, patset)
-            for fn_name, _ in ms:
-                found[kind].add(fn_name)
+        for kind, patset_list in patterns_map.items():
+            for patset in patset_list:
+                if not patset:
+                    continue
+                ms = find_matches_in_file(f, patset)
+                for fn_name, _ in ms:
+                    found[kind].add(fn_name)
 
     def fmt_list(var: str, names: Iterable[str]) -> str:
         arr = sorted(set(str(n) for n in names))
