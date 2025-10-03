@@ -2,7 +2,7 @@ import argparse
 import json
 import re
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 
 def parse_args(args=None, namespace=None):
@@ -27,9 +27,15 @@ def _iter_instruction_lists(doc: Dict[str, Any]) -> Iterable[Tuple[str, List[Dic
 
 
 def _param_like(a: Any, b: Any) -> bool:
-    # Deep comparison with special handling for ActionRef
+    # Deep comparison with special handling for wildcards
     if isinstance(b, dict):
-        # If pattern says ActionRef, only require candidate to be ActionRef (ignore addr)
+        # Wildcard: match any Value
+        if b.get("type") == "WildcardValue":
+            return isinstance(a, dict) and a.get("type") == "Value"
+        # Wildcard: match any DataPointer
+        if b.get("type") == "WildcardDataPointer":
+            return isinstance(a, dict) and a.get("type") == "DataPointer"
+        # If pattern says ActionRef, only require candidate to be ActionRef (ignore addr/label)
         if b.get("type") == "ActionRef":
             return isinstance(a, dict) and a.get("type") == "ActionRef"
         if not isinstance(a, dict):
@@ -63,10 +69,13 @@ def _inst_matches(inst: Dict[str, Any], pat: Dict[str, Any], doc: Dict[str, Any]
         # params must match
         if not _param_like(inst.get("params"), pat.get("params")):
             return False
-        # optional nested pattern reference via target like "<pattern1>"
+        # optional nested pattern reference via target like "<pattern1>" or wildcard "<func>"
         pt = pat.get("target")
         if isinstance(pt, str) and pt.startswith("<") and pt.endswith(">"):
             sub_name = pt[1:-1]
+            # Wildcard: <func> matches any function call
+            if sub_name == "func":
+                return True
             sub_seq = pattern_set.get(sub_name)
             if not sub_seq:
                 return False
@@ -94,7 +103,15 @@ def _matches_at(insts: List[Dict[str, Any]], start: int, pattern: List[Dict[str,
 def _load_feature_set(name: str) -> Dict[str, List[Dict[str, Any]]]:
     """Load feature patterns from .txt (preferred) or .json.
 
-    .txt format is a lightweight DSL, e.g.:
+    .txt format is a lightweight DSL with wildcards support:
+
+    Wildcards:
+        <func>   - matches any function call (in call target)
+        [label]  - matches any ActionRef (any label)
+        N        - matches any Value parameter
+        =N       - matches any DataPointer parameter
+
+    Example:
 
         pattern:
             raw 11, =0, =1
@@ -104,6 +121,11 @@ def _load_feature_set(name: str) -> Dict[str, List[Dict[str, Any]]]:
 
         pattern1:
             raw 226, =101, 80000000, FFFFFF00, =0, =0, =0, =0, =0
+            return
+
+        pattern_with_wildcards:
+            call <func>, N
+            raw 3, FFFFFF06, =4, =1, [label]
             return
     """
 
@@ -184,8 +206,16 @@ def _parse_params(param_str: str) -> List[Dict[str, Any]]:
         # Allow inline comments after params using '#'
         if part.startswith("#"):
             break
-        # Explicit ActionRef (ignore label/addr in pattern)
-        if part.startswith("[") and part.endswith("]"):
+        # Wildcard: N matches any Value
+        if part.upper() == "N":
+            out.append({"type": "WildcardValue"})
+            continue
+        # Wildcard: =N matches any DataPointer
+        if part.upper() == "=N":
+            out.append({"type": "WildcardDataPointer"})
+            continue
+        # Explicit ActionRef (ignore label/addr in pattern) - [label] or [N]
+        if part.startswith(r"[") and part.endswith(r"]"):
             out.append({"type": "ActionRef"})
             continue
         # Quoted string -> DataPointer string
@@ -320,8 +350,7 @@ def find_matches_in_file(path: Path, pattern_set: Dict[str, List[Dict[str, Any]]
     return results
 
 
-def _load_all_features_for_category(category: str) -> List[Dict[str, List[Dict[str, Any]]]]:
-    """Load all feature files for a category (e.g., VOICE0.txt, VOICE1.txt, etc.)"""
+def _load_all_features_for_category(category: str):
     features = []
     index = 0
     while True:
@@ -334,18 +363,17 @@ def _load_all_features_for_category(category: str) -> List[Dict[str, List[Dict[s
     return features
 
 
-def main(JA_dir: str) -> None:
+def main(JA_dir: str):
     ja_path = Path(JA_dir)
     files = sorted(ja_path.rglob("*.json"))
 
-    # Load all feature files for each category
     categories = ["VOICE", "SPEAKER", "TEXT", "COMBINE"]
-    patterns_map: Dict[str, List[Dict[str, List[Dict[str, Any]]]]] = {}
+    patterns_map = {}
 
     for category in categories:
         patterns_map[category] = _load_all_features_for_category(category)
 
-    found: Dict[str, Set[str]] = {cat: set() for cat in categories}
+    found = {cat: set() for cat in categories}
 
     for f in files:
         for kind, patset_list in patterns_map.items():

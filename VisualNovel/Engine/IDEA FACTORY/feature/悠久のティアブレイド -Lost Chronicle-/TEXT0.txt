@@ -2,9 +2,6 @@ pattern:
 call <pattern1>, FFFFFF00
 return
 
-call <all>, FFFFFF00
-return
-
 pattern1:
 raw 11, =0, =1
 raw FFFFFF14, 80000000, =0

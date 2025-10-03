@@ -2,10 +2,11 @@ import base64
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Literal, Optional, Tuple, Union
+from typing import Dict, List, Literal, Optional
 
-from stcm2 import STCM2_MAGIC, Action, ParameterKind
+from stcm2 import STCM2_MAGIC, ParameterKind
 from stcm2 import from_bytes as stcm2_from_bytes
+from tqdm import tqdm
 
 
 @dataclass
@@ -94,39 +95,7 @@ def label_to_string(label: bytes) -> str:
             out.append("\\x" + f"{b:02x}")
     return "".join(out)
 
-def looks_like_short_string_4(b: bytes, ascii_only: bool = False) -> bool:
-    assert len(b) == 4
-    # 统计末尾 0 的个数
-    nzero = 0
-    for x in reversed(b):
-        if x == 0:
-            nzero += 1
-        else:
-            break
-    if nzero == 0:
-        return False  # 没有 0 结尾，不是 canonical 的短字符串
-    prefix = b[:4 - nzero]  # 去掉末尾 0 后的主体（长度 0..3）
 
-    # 空串 ""（四个 0）也算字符串
-    if len(prefix) == 0:
-        return True
-
-    if ascii_only:
-        # 只接受可打印 ASCII
-        return all(0x20 <= x <= 0x7E for x in prefix)
-
-    # 更稳：先试 UTF-8，再试 CP932（你的 decode_with_hex_replacement 也是这两种）
-    try:
-        prefix.decode("utf-8", "strict")
-        return True
-    except UnicodeDecodeError:
-        pass
-    try:
-        prefix.decode("cp932", "strict")
-        return True
-    except UnicodeDecodeError:
-        return False
-    
 def decode_string(addr: int, data: bytes):
     if addr < 0 or addr > len(data):
         raise ValueError("addr out of bounds")
@@ -252,10 +221,7 @@ class DisasmConfig:
     show_address: bool = False
 
 
-def build_ir(file_bytes: bytes, mnemonics: Optional[Dict[int, str]] = None) -> ModuleIR:
-    if mnemonics is None:
-        mnemonics = {0: "return"}
-
+def build_ir(file_bytes: bytes) -> ModuleIR:
     stcm2 = stcm2_from_bytes(file_bytes)
 
     # 1) autolabel
@@ -395,9 +361,7 @@ def build_ir(file_bytes: bytes, mnemonics: Optional[Dict[int, str]] = None) -> M
     return ModuleIR(tag=tag, global_data=stcm2.global_data, functions=functions)
 
 
-def render_text(mod: ModuleIR, config: Optional[DisasmConfig] = None) -> str:
-    if config is None:
-        config = DisasmConfig(mnemonics={0: "return"})
+def render_text(mod: ModuleIR, config: DisasmConfig) -> str:
     mnemonics = config.mnemonics
     print_junk = config.print_junk
     show_address = config.show_address
@@ -481,15 +445,18 @@ def render_text(mod: ModuleIR, config: Optional[DisasmConfig] = None) -> str:
     return "\n".join(out_lines) + "\n"
 
 
-def render_json(mod: ModuleIR, include_addr: bool = False) -> str:
-    code_start: Dict[str, List[dict]] = {}
+def render_json(mod: ModuleIR, config: DisasmConfig) -> str:
+    mnemonics = config.mnemonics
+    include_addr = config.show_address
+
+    code_start = {}
 
     for fn in mod.functions:
-        inst_list: List[dict] = []
+        inst_list = []
         for inst in fn.instructions:
 
-            def params_to_json() -> List[dict]:
-                out: List[dict] = []
+            def params_to_json():
+                out = []
                 for p in inst.params:
                     if p.kind == "Value":
                         out.append({"type": "Value", "value": p.value or 0})
@@ -522,10 +489,11 @@ def render_json(mod: ModuleIR, include_addr: bool = False) -> str:
 
             if inst.call:
                 base.update({"action": "call", "target": inst.call_target_label or ""})
-            elif inst.opcode == 0:
-                base.update({"action": "return"})
             else:
-                base.update({"action": "opcode", "target": inst.opcode})
+                if inst.opcode in mnemonics:
+                    base.update({"action": mnemonics[inst.opcode]})
+                else:
+                    base.update({"action": "opcode", "target": inst.opcode})
 
             inst_list.append(base)
 
@@ -535,88 +503,31 @@ def render_json(mod: ModuleIR, include_addr: bool = False) -> str:
     return json.dumps(out, ensure_ascii=False, indent=2)
 
 
-def disassemble(
-    file_bytes: bytes,
-    mnemonics: Optional[Dict[int, str]] = None,
-    print_junk: bool = False,
-    show_address: bool = False,
-    want_text: bool = True,
-    want_json: bool = True,
-    json_include_addr: bool = False,
-) -> Union[str, Tuple[Optional[str], Optional[str]]]:
-    ir = build_ir(file_bytes, mnemonics=mnemonics)
-
-    txt: Optional[str] = None
-    js: Optional[str] = None
-
-    if want_text:
-        txt = render_text(ir, DisasmConfig(mnemonics=mnemonics or {0: "return"}, print_junk=print_junk, show_address=show_address))
-    if want_json:
-        js = render_json(ir, include_addr=json_include_addr)
-
-    if want_text and want_json:
-        return txt or "", js or ""
-    if want_text:
-        return txt or ""
-    if want_json:
-        return js or ""
-    return None, None
-
-
-def run(
+def disasm_run(
     in_dir: Path,
-    mnemonics: Optional[Dict[int, str]] = None,
+    mnemonics: Dict[int, str],
     print_junk: bool = False,
     show_address: bool = False,
     emit_txt: bool = True,
     emit_json: bool = True,
-    json_include_addr: bool = False,
 ):
     in_dir = Path(in_dir)
-    for path in in_dir.rglob("*"):
+    cfg = DisasmConfig(mnemonics=mnemonics, print_junk=print_junk, show_address=show_address)
+
+    for path in tqdm(in_dir.rglob("*.DAT"),ncols=150):
         if not path.is_file():
-            continue
-        with open(path, "rb") as f:
-            header = f.read(len(STCM2_MAGIC))
-        if header != STCM2_MAGIC:
             continue
 
         file_bytes = path.read_bytes()
-        txt, json_s = (
-            disassemble(
-                file_bytes,
-                mnemonics=mnemonics,
-                print_junk=print_junk,
-                show_address=show_address,
-                want_text=emit_txt,
-                want_json=emit_json,
-                json_include_addr=json_include_addr,
-            )
-            if (emit_txt and emit_json)
-            else (
-                (disassemble(file_bytes, mnemonics=mnemonics, print_junk=print_junk, show_address=show_address, want_text=True, want_json=False), None)
-                if emit_txt
-                else (None, disassemble(file_bytes, mnemonics=mnemonics, print_junk=print_junk, show_address=show_address, want_text=False, want_json=True, json_include_addr=json_include_addr))
-            )
-        )
+        if len(file_bytes) < len(STCM2_MAGIC) or file_bytes[: len(STCM2_MAGIC)] != STCM2_MAGIC:
+            continue
 
-        if emit_txt and isinstance(txt, str):
+        ir = build_ir(file_bytes)
+
+        if emit_txt:
+            txt = render_text(ir, cfg)
             path.with_suffix(".txt").write_text(txt, encoding="utf-8")
-        if emit_json and isinstance(json_s, str):
-            path.with_suffix(".json").write_text(json_s, encoding="utf-8")
 
-
-if __name__ == "__main__":
-    import argparse
-
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--in_dir", default=Path(r"D:\Fuck_VN\script"))
-    ap.add_argument("--addr", default=True, help="Show addresses in .txt output")
-    ap.add_argument("--junk", action="store_true", help="Print junk bytes in .txt output")
-    ap.add_argument("--no-txt", dest="emit_txt", action="store_false", help="Do not emit .txt files")
-    ap.add_argument("--no-json", dest="emit_json", action="store_false", help="Do not emit .json files")
-    ap.add_argument("--json-addr", action="store_true", help="Include instruction addresses in JSON output")
-
-    args = ap.parse_args()
-
-    run(args.in_dir, mnemonics={0: "return"}, print_junk=args.junk, show_address=args.addr, emit_txt=args.emit_txt, emit_json=args.emit_json, json_include_addr=args.json_addr)
+        if emit_json:
+            js = render_json(ir, cfg)
+            path.with_suffix(".json").write_text(js, encoding="utf-8")

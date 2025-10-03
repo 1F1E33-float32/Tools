@@ -2,15 +2,16 @@
 
 import argparse
 from pathlib import Path
-from typing import Dict, Optional
 
-from disasm import run as disasm_run
+from disasm import disasm_run
 from ruamel.yaml import YAML
 
 
-def load_mnemonics(config_path: Optional[Path]) -> Dict[int, str]:
+def load_mnemonics(config_path):
+    mnemonics = {0: "return"}
+
     if config_path is None or not config_path.exists():
-        return {0: "return"}
+        return mnemonics
 
     try:
         yaml = YAML(typ="safe", pure=True)
@@ -18,18 +19,15 @@ def load_mnemonics(config_path: Optional[Path]) -> Dict[int, str]:
             config = yaml.load(f)
 
         if config is None or "mnemonics" not in config:
-            return {0: "return"}
+            return mnemonics
 
         mnemonics_config = config["mnemonics"]
         if not isinstance(mnemonics_config, dict):
             print("Warning: 'mnemonics' in config is not a dict, using defaults")
-            return {0: "return"}
+            return mnemonics
 
-        # Expect {opcode:int -> name:str}
-        mnemonics: Dict[int, str] = {}
         for opcode, name in mnemonics_config.items():
             if not isinstance(opcode, int):
-                # Try to coerce numeric strings to int
                 if isinstance(opcode, str) and opcode.isdigit():
                     opcode = int(opcode)
                 else:
@@ -40,6 +38,10 @@ def load_mnemonics(config_path: Optional[Path]) -> Dict[int, str]:
                 continue
             mnemonics[opcode] = name
 
+        if 0 not in mnemonics:
+            mnemonics[0] = "return"
+            print("Info: Added default mnemonic {0: 'return'}")
+
         return mnemonics
     except Exception as e:
         print(f"Error loading config from {config_path}: {e}")
@@ -48,11 +50,19 @@ def load_mnemonics(config_path: Optional[Path]) -> Dict[int, str]:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--in_dir", type=Path, default=Path(r"D:\Fuck_VN\text"))
-    parser.add_argument("--config", type=Path, default=Path(r"VisualNovel\Engine\IDEA FACTORY\feature\悠久のティアブレイド -Lost Chronicle-\config.yaml"))
+
+    parser.add_argument("--in_dir", default=Path(r"D:\Fuck_VN\script"))
+    parser.add_argument("--config", default=Path())
+
+    parser.add_argument("--addr", action="store_true", default=False)
+    parser.add_argument("--junk", action="store_true", default=False)
+
+    parser.add_argument("--emit-txt", action="store_true", default=True)
+    parser.add_argument("--emit-json", action="store_true", default=True)
+
     args = parser.parse_args()
 
     mnemonics = load_mnemonics(args.config)
-    print(f"Loaded {len(mnemonics)} mnemonics")
+    print(f"Loaded {len(mnemonics)} mnemonics from config")
 
-    disasm_run(args.in_dir, mnemonics)
+    disasm_run(in_dir=args.in_dir, mnemonics=mnemonics, print_junk=args.junk, show_address=args.addr, emit_txt=args.emit_txt, emit_json=args.emit_json)
