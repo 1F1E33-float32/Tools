@@ -6,10 +6,10 @@ from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 from tqdm import tqdm
 
-VOICE_FUNC_LIST = ["fn_24A60", "fn_24C78"]
-SPEAKER_FUNC_LIST = ["fn_17A48"]
-TEXT_FUNC_LIST = ["fn_172A0"]
-COMBINE_FUNC_LIST = ["fn_4B0D4"]
+VOICE_FUNC_LIST = ["fn_24CF4", "fn_24D94", "fn_25914", "fn_66A64", "fn_66B04"]
+SPEAKER_FUNC_LIST = ["fn_17DF8", "fn_17E98", "fn_18A18"]
+TEXT_FUNC_LIST = ["fn_17650", "fn_176F0", "fn_18270"]
+COMBINE_FUNC_LIST = ["fn_49EC0", "fn_49F60", "fn_4A628", "fn_4A910", "fn_4AAE0"]
 
 FUNCDEF_TYPE0 = {
     "VOICE_FUNC": VOICE_FUNC_LIST,

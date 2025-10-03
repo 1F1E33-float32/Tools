@@ -2,360 +2,215 @@ import argparse
 import json
 import re
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, List
+
+from tqdm import tqdm
 
 
-def parse_args(args=None, namespace=None):
-    p = argparse.ArgumentParser()
-    p.add_argument("-JA", type=str, default=r"D:\\Fuck_VN\\script")
-    return p.parse_args(args=args, namespace=namespace)
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-JA", default=r"D:\Fuck_VN\script")
+    parser.add_argument("-feature", default=r"悠久のティアブレイド -Lost Chronicle-")
+    return parser.parse_args()
 
 
-FEATURE_DIR = Path(__file__).parent / "feature" / "悠久のティアブレイド -Lost Chronicle-"
-
-
-def _iter_instruction_lists(doc: Dict[str, Any]) -> Iterable[Tuple[str, List[Dict[str, Any]]]]:
-    code = doc.get("code_start")
-    if isinstance(code, dict):
-        for fn_name, insts in code.items():
-            if isinstance(insts, list):
-                yield str(fn_name), insts
-        return
-    acts = doc.get("actions")
-    if isinstance(acts, list):
-        yield "<flat>", acts
-
-
-def _param_like(a: Any, b: Any) -> bool:
-    # Deep comparison with special handling for wildcards
+def param_like(a: Any, b: Any) -> bool:
     if isinstance(b, dict):
-        # Wildcard: match any Value
-        if b.get("type") == "WildcardValue":
+        b_type = b.get("type")
+        # Wildcard matching
+        if b_type == "WildcardValue":
             return isinstance(a, dict) and a.get("type") == "Value"
-        # Wildcard: match any DataPointer
-        if b.get("type") == "WildcardDataPointer":
+        if b_type == "WildcardDataPointer":
             return isinstance(a, dict) and a.get("type") == "DataPointer"
-        # If pattern says ActionRef, only require candidate to be ActionRef (ignore addr/label)
-        if b.get("type") == "ActionRef":
+        if b_type == "ActionRef":
             return isinstance(a, dict) and a.get("type") == "ActionRef"
+        # Deep dict comparison
         if not isinstance(a, dict):
             return False
-        for k, vb in b.items():
-            if k not in a:
-                return False
-            if not _param_like(a[k], vb):
-                return False
-        return True
+        return all(k in a and param_like(a[k], v) for k, v in b.items())
     if isinstance(b, list):
-        if not isinstance(a, list) or len(a) != len(b):
-            return False
-        return all(_param_like(aa, bb) for aa, bb in zip(a, b))
+        return isinstance(a, list) and len(a) == len(b) and all(param_like(aa, bb) for aa, bb in zip(a, b))
     return a == b
 
 
-def _inst_matches(inst: Dict[str, Any], pat: Dict[str, Any], doc: Dict[str, Any], fn_map: Dict[str, List[Dict[str, Any]]], pattern_set: Dict[str, List[Dict[str, Any]]]) -> bool:
-    act = inst.get("action")
-    pact = pat.get("action")
+def inst_matches(inst_or_insts, pat_or_start, pat_or_pattern, doc, fn_map, pattern_set) -> bool:
+    if isinstance(inst_or_insts, list):
+        insts = inst_or_insts
+        start = pat_or_start
+        pattern = pat_or_pattern
+        if start + len(pattern) > len(insts):
+            return False
+        for i, pat in enumerate(pattern):
+            if not inst_matches(insts[start + i], pat, None, doc, fn_map, pattern_set):
+                return False
+        return True
+
+    # 单条指令匹配模式
+    inst = inst_or_insts
+    pat = pat_or_start
+    act, pact = inst.get("action"), pat.get("action")
     if act != pact:
         return False
     if pact == "return":
         return True
     if pact == "opcode":
-        # target and params must match exactly
-        if inst.get("target") != pat.get("target"):
-            return False
-        return _param_like(inst.get("params"), pat.get("params"))
+        return inst.get("target") == pat.get("target") and param_like(inst.get("params"), pat.get("params"))
     if pact == "call":
-        # params must match
-        if not _param_like(inst.get("params"), pat.get("params")):
+        if not param_like(inst.get("params"), pat.get("params")):
             return False
-        # optional nested pattern reference via target like "<pattern1>" or wildcard "<func>"
         pt = pat.get("target")
         if isinstance(pt, str) and pt.startswith("<") and pt.endswith(">"):
             sub_name = pt[1:-1]
-            # Wildcard: <func> matches any function call
             if sub_name == "func":
                 return True
             sub_seq = pattern_set.get(sub_name)
             if not sub_seq:
                 return False
             callee = inst.get("target")
-            if not isinstance(callee, str):
-                return False
-            callee_insts = fn_map.get(callee)
+            callee_insts = fn_map.get(callee) if isinstance(callee, str) else None
             if not isinstance(callee_insts, list):
                 return False
-            return _matches_at(callee_insts, 0, sub_seq, doc, fn_map, pattern_set)
-        # otherwise ignore target differences
+            # 这里原来调用 matches_at，改为调用合并后的 inst_matches（序列分支）
+            return inst_matches(callee_insts, 0, sub_seq, doc, fn_map, pattern_set)
         return True
     return False
 
 
-def _matches_at(insts: List[Dict[str, Any]], start: int, pattern: List[Dict[str, Any]], doc: Dict[str, Any], fn_map: Dict[str, List[Dict[str, Any]]], pattern_set: Dict[str, List[Dict[str, Any]]]) -> bool:
-    if start + len(pattern) > len(insts):
-        return False
-    for offset, pat in enumerate(pattern):
-        if not _inst_matches(insts[start + offset], pat, doc, fn_map, pattern_set):
-            return False
-    return True
-
-
-def _load_feature_set(name: str) -> Dict[str, List[Dict[str, Any]]]:
-    """Load feature patterns from .txt (preferred) or .json.
-
-    .txt format is a lightweight DSL with wildcards support:
-
-    Wildcards:
-        <func>   - matches any function call (in call target)
-        [label]  - matches any ActionRef (any label)
-        N        - matches any Value parameter
-        =N       - matches any DataPointer parameter
-
-    Example:
-
-        pattern:
-            raw 11, =0, =1
-            raw 11, =0, =1
-            call <pattern1>, FFFFFF00
-            return
-
-        pattern1:
-            raw 226, =101, 80000000, FFFFFF00, =0, =0, =0, =0, =0
-            return
-
-        pattern_with_wildcards:
-            call <func>, N
-            raw 3, FFFFFF06, =4, =1, [label]
-            return
-    """
-
-    txt_path = FEATURE_DIR / f"{name}.txt"
-    if txt_path.exists():
-        try:
-            text = txt_path.read_text(encoding="utf-8")
-            patterns = _parse_feature_txt(text)
-            return patterns
-        except Exception:
-            # Fall through to JSON if TXT parsing fails
-            pass
-
-    p = FEATURE_DIR / f"{name}.json"
-    try:
-        obj = json.loads(p.read_text(encoding="utf-8"))
-        # New format: {"pattern": [...], "pattern1": [...], ...}
-        if isinstance(obj, dict) and any(isinstance(v, list) for v in obj.values()):
-            return {k: v for k, v in obj.items() if isinstance(v, list)}
-        # Legacy format: {"patterns": [[...], ...]}
-        pats = obj.get("patterns") if isinstance(obj, dict) else None
-        if isinstance(pats, list) and pats:
-            first = pats[0]
-            if isinstance(first, list):
-                return {"pattern": first}
-        return {}
-    except Exception:
-        return {}
-
-
-# ----------------------- TXT feature DSL parser -----------------------
-
-_LABEL_RE = re.compile(r"^\s*([A-Za-z0-9_<>.-]+):\s*$")
-
-
-def _parse_number(token: str, *, prefer_hex: bool = False) -> int:
+def parse_number(token: str, *, prefer_hex: bool = False) -> int:
     t = token.strip()
     if not t:
         raise ValueError("empty number token")
-    neg = False
-    if t.startswith("-"):
-        neg = True
+    neg = t.startswith("-")
+    if neg:
         t = t[1:]
-    base = 10
+    # Determine base
     if t.lower().startswith("0x"):
-        base = 16
-        t = t[2:]
+        base, t = 16, t[2:]
     elif prefer_hex:
-        # For opcode values (raw ...), prefer hex (e.g., 11 -> 0x11)
+        base = 16
+    elif re.fullmatch(r"[0-9A-Fa-f]+", t) and (re.search(r"[A-Fa-f]", t) or len(t) >= 8):
         base = 16
     else:
-        # Heuristics for hex-looking constants like FFFFFF00 or 80000000
-        if re.fullmatch(r"[0-9A-Fa-f]+", t):
-            if re.search(r"[A-Fa-f]", t) is not None:
-                base = 16
-            elif len(t) >= 8:  # e.g., 80000000 -> 0x80000000
-                base = 16
+        base = 10
     val = int(t, base)
     return -val if neg else val
 
 
-def _make_value_param(val: int) -> Dict[str, Any]:
-    return {"type": "Value", "value": val}
-
-
-def _make_dp_param(val: int) -> Dict[str, Any]:
-    return {"type": "DataPointer", "u32": val, "u32_type": 0}
-
-
-def _parse_params(param_str: str) -> List[Dict[str, Any]]:
+def parse_params(param_str: str):
     if not param_str:
         return []
-    parts = [p.strip() for p in param_str.split(",")]
-    out: List[Dict[str, Any]] = []
-    for part in parts:
-        if not part:
-            continue
-        # Allow inline comments after params using '#'
-        if part.startswith("#"):
+    out = []
+    for part in (p.strip() for p in param_str.split(",")):
+        if not part or part.startswith("#"):
             break
-        # Wildcard: N matches any Value
+        # Wildcards
         if part.upper() == "N":
             out.append({"type": "WildcardValue"})
-            continue
-        # Wildcard: =N matches any DataPointer
-        if part.upper() == "=N":
+        elif part.upper() == "=N":
             out.append({"type": "WildcardDataPointer"})
-            continue
-        # Explicit ActionRef (ignore label/addr in pattern) - [label] or [N]
-        if part.startswith(r"[") and part.endswith(r"]"):
+        elif part.startswith("[") and part.endswith("]"):
             out.append({"type": "ActionRef"})
-            continue
-        # Quoted string -> DataPointer string
-        if (part.startswith('"') and part.endswith('"')) or (part.startswith("'") and part.endswith("'")):
+        elif (part.startswith('"') and part.endswith('"')) or (part.startswith("'") and part.endswith("'")):
             out.append({"type": "DataPointer", "string": part[1:-1]})
-            continue
-        if part.startswith("="):
-            n = _parse_number(part[1:], prefer_hex=False)
-            out.append(_make_dp_param(n))
+        elif part.startswith("="):
+            out.append({"type": "DataPointer", "u32": parse_number(part[1:]), "u32_type": 0})
         else:
-            n = _parse_number(part, prefer_hex=False)
-            out.append(_make_value_param(n))
+            out.append({"type": "Value", "value": parse_number(part)})
     return out
 
 
-def _parse_feature_txt(text: str) -> Dict[str, List[Dict[str, Any]]]:
-    patterns: Dict[str, List[Dict[str, Any]]] = {}
-    current_name: Optional[str] = None
+LABEL_RE = re.compile(r"^\s*([A-Za-z0-9_<>.-]+):\s*$")
 
-    def ensure_current(name: str) -> List[Dict[str, Any]]:
-        if name not in patterns:
-            patterns[name] = []
-        return patterns[name]
 
-    for raw_line in text.splitlines():
-        line = raw_line.strip()
-        if not line:
+def parse_feature_txt(text: str):
+    patterns = {}
+    current_name = None
+
+    for line in text.splitlines():
+        line = line.strip()
+        if not line or line.startswith(("//", "#", ";")):
             continue
-        # Strip inline comments starting with '//' or '#'
-        if line.startswith("//") or line.startswith("#") or line.startswith(";"):
-            continue
-        # Label
-        m = _LABEL_RE.match(line)
+
+        # Label detection
+        m = LABEL_RE.match(line)
         if m:
             current_name = m.group(1)
             continue
+
         if current_name is None:
-            # Default to 'pattern' if no label yet
             current_name = "pattern"
 
-        insts = ensure_current(current_name)
+        if current_name not in patterns:
+            patterns[current_name] = []
+        insts = patterns[current_name]
         low = line.lower()
 
+        # Parse instructions
         if low.startswith("return"):
             insts.append({"action": "return"})
-            continue
-
-        if low.startswith("raw "):
-            # raw <opcode>, [params]
+        elif low.startswith("raw "):
             body = line[4:].strip()
             if not body:
                 raise ValueError("raw requires an opcode")
-            if "," in body:
-                op_str, rest = body.split(",", 1)
-                op_str = op_str.strip()
-                params = _parse_params(rest)
-            else:
-                op_str = body
-                params = []
-            opcode = _parse_number(op_str, prefer_hex=True)
+            op_str, _, rest = body.partition(",")
             insts.append({
                 "action": "opcode",
-                "target": opcode,
-                "params": params,
+                "target": parse_number(op_str.strip(), prefer_hex=True),
+                "params": parse_params(rest) if rest else [],
             })
-            continue
-
-        if low.startswith("call "):
+        elif low.startswith("call "):
             body = line[5:].strip()
-            target: Optional[str] = None
-            params_str = ""
-            # Optional target like <pattern1>
+            target, params_str = None, body
             if body.startswith("<"):
-                # find closing '>' then optional comma
                 end = body.find(">")
                 if end != -1:
-                    tname = body[1:end].strip()
-                    target = f"<{tname}>"
-                    params_str = body[end+1:].lstrip()
-                    if params_str.startswith(","):
-                        params_str = params_str[1:].lstrip()
-                else:
-                    # No closing '>', treat whole body as params
-                    params_str = body
-            else:
-                params_str = body
-            params = _parse_params(params_str)
-            inst: Dict[str, Any] = {"action": "call", "params": params}
+                    target = f"<{body[1:end].strip()}>"
+                    params_str = body[end + 1 :].lstrip(",").lstrip()
+            inst: Dict[str, Any] = {"action": "call", "params": parse_params(params_str)}
             if target:
                 inst["target"] = target
             insts.append(inst)
-            continue
 
-        # Unknown line, ignore gracefully
-        # You can add more keywords here as needed
-        continue
-
-    # If no explicit 'pattern' but there is exactly one pattern, alias it
+    # Ensure 'pattern' exists
     if "pattern" not in patterns and patterns:
-        first_name = next(iter(patterns.keys()))
-        if first_name != "pattern":
-            patterns["pattern"] = patterns[first_name]
+        patterns["pattern"] = patterns[next(iter(patterns.keys()))]
 
     return patterns
 
 
-def _build_fn_map(doc: Dict[str, Any]) -> Dict[str, List[Dict[str, Any]]]:
+def find_matches_in_file(path: Path, pattern_set):
+    head = pattern_set.get("pattern")
+    if not head:
+        return []
+    doc = json.loads(path.read_text(encoding="utf-8"))
+
+    # inlined build_fn_map
     fn_map: Dict[str, List[Dict[str, Any]]] = {}
     code = doc.get("code_start")
     if isinstance(code, dict):
-        for k, v in code.items():
-            if isinstance(v, list):
-                fn_map[str(k)] = v
+        fn_map.update({str(k): v for k, v in code.items() if isinstance(v, list)})
     acts = doc.get("actions")
     if isinstance(acts, list):
         fn_map["<flat>"] = acts
-    return fn_map
 
-
-def find_matches_in_file(path: Path, pattern_set: Dict[str, List[Dict[str, Any]]]) -> List[Tuple[str, int]]:
-    results: List[Tuple[str, int]] = []
-    if not pattern_set:
-        return results
-    head = pattern_set.get("pattern")
-    if not head:
-        return results
-    doc = json.loads(path.read_text(encoding="utf-8"))
-    fn_map = _build_fn_map(doc)
-    for fn_name, insts in _iter_instruction_lists(doc):
-        if _matches_at(insts, 0, head, doc, fn_map, pattern_set):
+    results = []
+    for fn_name, insts in fn_map.items():
+        if inst_matches(insts, 0, head, doc, fn_map, pattern_set):
             results.append((fn_name, 0))
     return results
 
 
-def _load_all_features_for_category(category: str):
+def load_all_features(category: str, feature_dir: Path):
     features = []
     index = 0
     while True:
-        feature_name = f"{category}{index}"
-        patset = _load_feature_set(feature_name)
+        txt_path = feature_dir / f"{category}{index}.txt"
+        if not txt_path.exists():
+            break
+        try:
+            patset = parse_feature_txt(txt_path.read_text(encoding="utf-8"))
+        except Exception:
+            patset = {}
         if not patset:
             break
         features.append(patset)
@@ -363,38 +218,27 @@ def _load_all_features_for_category(category: str):
     return features
 
 
-def main(JA_dir: str):
+def main(JA_dir: str, feature_name: str):
     ja_path = Path(JA_dir)
+    feature_dir = Path(__file__).parent / "feature" / feature_name
     files = sorted(ja_path.rglob("*.json"))
-
     categories = ["VOICE", "SPEAKER", "TEXT", "COMBINE"]
-    patterns_map = {}
 
-    for category in categories:
-        patterns_map[category] = _load_all_features_for_category(category)
-
+    patterns_map = {cat: load_all_features(cat, feature_dir) for cat in categories}
     found = {cat: set() for cat in categories}
 
-    for f in files:
+    for f in tqdm(files, ncols=150):
         for kind, patset_list in patterns_map.items():
             for patset in patset_list:
-                if not patset:
-                    continue
-                ms = find_matches_in_file(f, patset)
-                for fn_name, _ in ms:
+                for fn_name, _ in find_matches_in_file(f, patset):
                     found[kind].add(fn_name)
 
-    def fmt_list(var: str, names: Iterable[str]) -> str:
-        arr = sorted(set(str(n) for n in names))
-        inner = ", ".join(f'"{x}"' for x in arr)
-        return f"{var} = [{inner}]"
-
-    print(fmt_list("VOICE_FUNC_LIST", found["VOICE"]))
-    print(fmt_list("SPEAKER_FUNC_LIST", found["SPEAKER"]))
-    print(fmt_list("TEXT_FUNC_LIST", found["TEXT"]))
-    print(fmt_list("COMBINE_FUNC_LIST", found["COMBINE"]))
+    for cat in categories:
+        names = sorted(found[cat])
+        inner = ", ".join(f'"{n}"' for n in names)
+        print(f"{cat}_FUNC_LIST = [{inner}]")
 
 
 if __name__ == "__main__":
-    a = parse_args()
-    main(a.JA)
+    args = parse_args()
+    main(args.JA, args.feature)

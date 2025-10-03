@@ -1,0 +1,25 @@
+pattern:
+call <func>, "def_name", FFFFFF22
+raw 3, FFFFFF22, =4, =1, [label]
+raw 3, FFFFFF00, =5, =0, [label]
+call <func>, FFFFFF00, =0
+call <func>, FFFFFF01
+raw 6, [label]
+raw 3, FFFFFF04, =5, =0, [label]
+call <func>, FFFFFF04, =0
+call <func>, FFFFFF05
+return
+call <func>, "def_name", FFFFFF22
+raw 3, FFFFFF22, =4, =1, [label]
+raw 3, FFFFFF00, =5, =0, [label]
+call <func>, FFFFFF00, =0
+call <func>, FFFFFF01
+call <func>, FFFFFF02
+call <func>, FFFFFF03
+raw 6, [label]
+raw 3, FFFFFF04, =5, =0, [label]
+call <func>, FFFFFF04, =0
+call <func>, FFFFFF05
+call <func>, FFFFFF06
+call <func>, FFFFFF07
+return
