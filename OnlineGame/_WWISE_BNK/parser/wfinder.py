@@ -1,4 +1,3 @@
-
 # finds nodes in a node's tree based on config, external to simplify but could be optimized
 # if added to model to avoid generating attrs dicts
 class NodeFinder(object):
@@ -7,7 +6,7 @@ class NodeFinder(object):
             names = [name]
         if type:
             types = [type]
-        if value is not None: #may be 0
+        if value is not None:  # may be 0
             values = [value]
         if names is None:
             names = []
@@ -24,7 +23,6 @@ class NodeFinder(object):
         self.contains = contains
         self.empty = not names and not types and not values and not contains
 
-
     def find1(self, node):
         return self.find(node, first=True)
 
@@ -35,7 +33,7 @@ class NodeFinder(object):
         self.depth = 0
 
         # aim for outer nodes first as it's slightly faster in some cases
-        #self._find_inner(node)
+        # self._find_inner(node)
         self._find_outer([node])
 
         if self.results:
@@ -51,7 +49,7 @@ class NodeFinder(object):
         self.depth = 0
 
         # aim for outer nodes first as it's slightly faster in some cases
-        #self._find_inner(node)
+        # self._find_inner(node)
         self._find_outer([node])
 
         return self.results
@@ -116,28 +114,27 @@ class NodeFinder(object):
             if self.first and self.results:
                 return
 
-
     def _query(self, node):
         # may simplify with a list of find key + value (like contains)?
         # find target values in attrs
-        #attrs = node.get_attrs()
-        valid = self.depth > 0 or self.depth == 0 and self.base #first
+        # attrs = node.get_attrs()
+        valid = self.depth > 0 or self.depth == 0 and self.base  # first
         if not valid:
             return
 
-        attr = node.get_attr('name')
+        attr = node.get_attr("name")
         if attr:
             for target in self.names:
                 if attr == target:
                     self.results.append(node)
 
-        attr = node.get_attr('type')
+        attr = node.get_attr("type")
         if attr:
             for target in self.types:
                 if attr == target:
                     self.results.append(node)
 
-        attr = node.get_attr('value')
+        attr = node.get_attr("value")
         if attr is not None:
             for target in self.values:
                 if attr == target:
@@ -155,6 +152,7 @@ class NodeFinder(object):
 def node_find(node, name=None, type=None, names=None, types=None, value=None, values=None):
     finder = NodeFinder(name=name, type=type, names=names, types=types)
     return finder.find(node)
+
 
 def node_finds(node, name=None, type=None, names=None, types=None, first=False, value=None, values=None):
     finder = NodeFinder(name=name, type=type, names=names, types=types, value=value, values=values)

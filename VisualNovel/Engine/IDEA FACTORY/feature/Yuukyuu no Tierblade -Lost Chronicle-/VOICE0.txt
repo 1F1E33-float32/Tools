@@ -1,0 +1,7 @@
+pattern:
+call <pattern1>, FFFFFF00
+return
+
+pattern1:
+raw 244, =301, =0, FFFFFF00, =1, =2, =0, =0, =0
+return

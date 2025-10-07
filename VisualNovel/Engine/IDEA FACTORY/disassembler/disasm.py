@@ -1,5 +1,6 @@
 import base64
 import json
+import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Literal, Optional
@@ -96,6 +97,41 @@ def label_to_string(label: bytes) -> str:
     return "".join(out)
 
 
+def four_byte_heuristic(v: bytes):
+    assert len(v) == 4
+    n = int.from_bytes(v, "little")
+
+    # 24-bit 以上直接按 U32
+    if n > 0xFFFFFF:
+        return StringType("U32", n, 0)
+
+    # 裁掉末尾 0
+    nzero = 0
+    for b in reversed(v):
+        if b == 0:
+            nzero += 1
+        else:
+            break
+    trimmed = v[: 4 - nzero]
+
+    # 长度 < 3 或恰为 b"op" → 认为不是字符串
+    if len(trimmed) < 3 or trimmed == b"op":
+        return StringType("U32", n, 0)
+
+    # 严格解码；失败或含控制字符则按 U32
+    try:
+        s = trimmed.decode("utf-8", errors="strict")
+    except UnicodeDecodeError:
+        return StringType("U32", n, 0)
+
+    for ch in s:
+        if unicodedata.category(ch) == "Cc":
+            return StringType("U32", n, 0)
+
+    # 其余情况按字符串返回（使用裁零后的字节）
+    return StringType("String", None, 0, data=trimmed)
+
+
 def decode_string(addr: int, data: bytes):
     if addr < 0 or addr > len(data):
         raise ValueError("addr out of bounds")
@@ -119,13 +155,19 @@ def decode_string(addr: int, data: bytes):
     str_bytes = s[16 : 16 + length].tobytes()
     tail = s[16 + length :].tobytes()
 
+    # 与 Rust 对齐：type_ == 1 仅当长度为 4 才是合法的 U32，否则报错
+    if type_ == 1:
+        if len(str_bytes) == 4:
+            n = int.from_bytes(str_bytes, "little")
+            return StringType("U32", n, 1), tail
+        else:
+            raise ValueError("string type is 1, but is not a u32")
+
+    # 下面只剩 type_ == 0
     if len(str_bytes) == 4:
-        n = int.from_bytes(str_bytes, "little")
-        return StringType("U32", n, type_), tail
+        return four_byte_heuristic(str_bytes), tail
 
-    if type_ != 0:
-        raise ValueError("string type is 1, but is not a u32")
-
+    # 非 4 字节字符串路径：裁掉 1..=4 个末尾 0，并校验 canonical
     nzero = 0
     for b in reversed(str_bytes):
         if b == 0:
@@ -514,7 +556,7 @@ def disasm_run(
     in_dir = Path(in_dir)
     cfg = DisasmConfig(mnemonics=mnemonics, print_junk=print_junk, show_address=show_address)
 
-    for path in tqdm(in_dir.rglob("*.DAT"),ncols=150):
+    for path in tqdm(in_dir.rglob("*.DAT"), ncols=150):
         if not path.is_file():
             continue
 

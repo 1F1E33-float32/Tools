@@ -6,10 +6,10 @@ from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 from tqdm import tqdm
 
-VOICE_FUNC_LIST = ["fn_24CF4", "fn_24D94", "fn_25914", "fn_66A64", "fn_66B04"]
-SPEAKER_FUNC_LIST = ["fn_17DF8", "fn_17E98", "fn_18A18"]
-TEXT_FUNC_LIST = ["fn_17650", "fn_176F0", "fn_18270"]
-COMBINE_FUNC_LIST = ["fn_49EC0", "fn_49F60", "fn_4A628", "fn_4A910", "fn_4AAE0"]
+VOICE_FUNC_LIST = ["fn_24A60", "fn_24C78"]
+SPEAKER_FUNC_LIST = ["fn_17A48"]
+TEXT_FUNC_LIST = ["fn_172A0"]
+COMBINE_FUNC_LIST = ["fn_4B0D4"]
 
 FUNCDEF_TYPE0 = {
     "VOICE_FUNC": VOICE_FUNC_LIST,
@@ -134,7 +134,7 @@ def _extract_text_from_call(inst: Dict, text_func: Union[str, Sequence[str]]) ->
     return None
 
 
-def _extract_voice_text_from_combine_call(inst: Dict, combine_funcs: Union[str, Sequence[str]]) -> Optional[Tuple[Optional[int], Optional[int], str, str]]:
+def _extract_voice_text_from_combine_call(inst: Dict, combine_funcs: Union[str, Sequence[str]]):
     if not _is_call(inst, combine_funcs):
         return None
     params = inst.get("params") or []
@@ -216,7 +216,7 @@ def make_processor_type0():
             j += 1
 
         text = text_cleaning(_clean_placeholder_names("".join(text_parts)))
-        out: List[Tuple[str, Optional[int], str, str]] = []
+        out = []
         if text:
             out.append((speaker, speaker_id, voice, text))
         return j, out
@@ -258,7 +258,7 @@ def make_processor_type1():
         speaker, speaker_id = spk
         speaker = re.sub(r"\[.*?\]", "", speaker).replace(" ", "")
         text = text_cleaning(_clean_placeholder_names("".join(text_parts)))
-        out: List[Tuple[str, Optional[int], str, str]] = []
+        out = []
         if text:
             out.append((speaker, speaker_id, voice, text))
         return j, out
@@ -301,7 +301,7 @@ def make_processor_type2():
         text2 = text_cleaning(_clean_placeholder_names(t2))
         voice2 = f"{v2:07d}"
 
-        out: List[Tuple[str, Optional[int], str, str]] = []
+        out = []
         if text2:
             # speaker_id unknown for this pattern per requirement -> set to -1
             out.append((speaker, -1, voice2, text2))
@@ -318,7 +318,7 @@ def run_with_version(JA_dir: str, op_json: str) -> None:
     ja_path = Path(JA_dir)
     filelist = sorted(ja_path.rglob("*.json"))
 
-    collected: List[Tuple[str, Optional[int], str, str]] = []
+    collected = []
 
     for jf in tqdm(filelist, ncols=150):
         doc = json.loads(jf.read_text(encoding="utf-8"))

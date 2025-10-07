@@ -2,7 +2,7 @@ pattern:
 call <pattern1>, FFFFFF00
 return
 
-call <all>, FFFFFF00
+call <func>, FFFFFF00
 return
 
 pattern1:

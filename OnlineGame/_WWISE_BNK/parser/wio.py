@@ -1,7 +1,8 @@
-import os, struct
+import os
+import struct
+
 
 class FileReader(object):
-
     def __init__(self, file):
         self.file = file
         self.be = False
@@ -11,7 +12,7 @@ class FileReader(object):
         self.size = file.tell()
         file.seek(0, os.SEEK_SET)
 
-    #def _read_buf(self, offset, type, size):
+    # def _read_buf(self, offset, type, size):
     #    elem = self.buf[offset:offset+size]
     #    return struct.unpack(type, elem)[0]
 
@@ -38,11 +39,11 @@ class FileReader(object):
         elem = self.file.read(size)
         self._check(elem, size)
 
-        elem = bytes(elem) #force
-        #remove c-string null terminator, .decode() retains it
+        elem = bytes(elem)  # force
+        # remove c-string null terminator, .decode() retains it
         if elem[-1] == 0:
             elem = elem[:-1]
-        text = elem.decode('UTF-8')
+        text = elem.decode("UTF-8")
         return text
 
     def __bytes(self, offset, size):
@@ -51,7 +52,7 @@ class FileReader(object):
         elem = self.file.read(size)
         self._check(elem, size)
 
-        elem = bytes(elem) #force
+        elem = bytes(elem)  # force
         return elem
 
     def __unxor(self, elem, size):
@@ -70,113 +71,113 @@ class FileReader(object):
             elem[i - offset] ^= xor
         return elem
 
-    def d64le(self, offset = None):
-        return self.__read(offset, '<d', 8)
+    def d64le(self, offset=None):
+        return self.__read(offset, "<d", 8)
 
-    def d64be(self, offset = None):
-        return self.__read(offset, '>d', 8)
+    def d64be(self, offset=None):
+        return self.__read(offset, ">d", 8)
 
-    def d64(self, offset = None):
+    def d64(self, offset=None):
         if self.be:
             return self.d64be(offset)
         else:
             return self.d64le(offset)
 
-    def f32le(self, offset = None):
-        return self.__read(offset, '<f', 4)
+    def f32le(self, offset=None):
+        return self.__read(offset, "<f", 4)
 
-    def f32be(self, offset = None):
-        return self.__read(offset, '>f', 4)
+    def f32be(self, offset=None):
+        return self.__read(offset, ">f", 4)
 
-    def f32(self, offset = None):
+    def f32(self, offset=None):
         if self.be:
             return self.f32be(offset)
         else:
             return self.f32le(offset)
 
-    def s64le(self, offset = None):
-        return self.__read(offset, '<q', 8)
+    def s64le(self, offset=None):
+        return self.__read(offset, "<q", 8)
 
-    def s64be(self, offset = None):
-        return self.__read(offset, '>q', 8)
+    def s64be(self, offset=None):
+        return self.__read(offset, ">q", 8)
 
-    def u64le(self, offset = None):
-        return self.__read(offset, '<Q', 8)
+    def u64le(self, offset=None):
+        return self.__read(offset, "<Q", 8)
 
-    def u64be(self, offset = None):
-        return self.__read(offset, '>Q', 8)
+    def u64be(self, offset=None):
+        return self.__read(offset, ">Q", 8)
 
-    def s64(self, offset = None):
+    def s64(self, offset=None):
         if self.be:
             return self.s64be(offset)
         else:
             return self.s64le(offset)
 
-    def u64(self, offset = None):
+    def u64(self, offset=None):
         if self.be:
             return self.u64be(offset)
         else:
             return self.u64le(offset)
 
-    def s32le(self, offset = None):
-        return self.__read(offset, '<i', 4)
+    def s32le(self, offset=None):
+        return self.__read(offset, "<i", 4)
 
-    def s32be(self, offset = None):
-        return self.__read(offset, '>i', 4)
+    def s32be(self, offset=None):
+        return self.__read(offset, ">i", 4)
 
-    def u32le(self, offset = None):
-        return self.__read(offset, '<I', 4)
+    def u32le(self, offset=None):
+        return self.__read(offset, "<I", 4)
 
-    def u32be(self, offset = None):
-        return self.__read(offset, '>I', 4)
+    def u32be(self, offset=None):
+        return self.__read(offset, ">I", 4)
 
-    def s32(self, offset = None):
+    def s32(self, offset=None):
         if self.be:
             return self.s32be(offset)
         else:
             return self.s32le(offset)
 
-    def u32(self, offset = None):
+    def u32(self, offset=None):
         if self.be:
             return self.u32be(offset)
         else:
             return self.u32le(offset)
 
-    def s16le(self, offset = None):
-        return self.__read(offset, '<h', 2)
+    def s16le(self, offset=None):
+        return self.__read(offset, "<h", 2)
 
-    def s16be(self, offset = None):
-        return self.__read(offset, '>h', 2)
+    def s16be(self, offset=None):
+        return self.__read(offset, ">h", 2)
 
-    def s16(self, offset = None):
+    def s16(self, offset=None):
         if self.be:
             return self.s16be(offset)
         else:
             return self.s16le(offset)
 
-    def u16le(self, offset = None):
-        return self.__read(offset, '<H', 2)
+    def u16le(self, offset=None):
+        return self.__read(offset, "<H", 2)
 
-    def u16be(self, offset = None):
-        return self.__read(offset, '>H', 2)
+    def u16be(self, offset=None):
+        return self.__read(offset, ">H", 2)
 
-    def u16(self, offset = None):
+    def u16(self, offset=None):
         if self.be:
             return self.u16be(offset)
         else:
             return self.u16le(offset)
 
-    def s8(self, offset = None):
-        return self.__read(offset, 'b', 1)
+    def s8(self, offset=None):
+        return self.__read(offset, "b", 1)
 
-    def u8(self, offset = None):
-        return self.__read(offset, 'B', 1)
+    def u8(self, offset=None):
+        return self.__read(offset, "B", 1)
 
-    def str(self, size, offset = None):
+    def str(self, size, offset=None):
         return self.__read_string(offset, size)
 
-    def fourcc(self, offset = None):
-        #as bytes rather than string to avoid failures on bad data
+    def fourcc(self, offset=None):
+        # as bytes rather than string to avoid failures on bad data
         return self.__bytes(offset, 4)
 
     def gap(self, bytes):
@@ -226,6 +227,7 @@ class FileReader(object):
 
     def set_xorpad(self, xorpad):
         self._xorpad = xorpad
+
 
 class ReaderError(Exception):
     def __init__(self, msg):

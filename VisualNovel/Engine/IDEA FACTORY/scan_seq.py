@@ -10,7 +10,7 @@ from tqdm import tqdm
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-JA", default=r"D:\Fuck_VN\script")
-    parser.add_argument("-feature", default=r"悠久のティアブレイド -Lost Chronicle-")
+    parser.add_argument("-feature", default=r"Kurenai no Homura Sanada Ninpou Chou for Nintendo Switch")
     return parser.parse_args()
 
 

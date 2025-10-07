@@ -1,26 +1,27 @@
 import os
 from collections import OrderedDict
+
 from . import wdefs, wfinder
 
-#maybe should be in some enum?
-TYPE_4CC = '4cc'
-TYPE_D64 = 'd64'
-TYPE_S64 = 's64'
-TYPE_U64 = 'u64'
-TYPE_S32 = 's32'
-TYPE_U32 = 'u32'
-TYPE_F32 = 'f32'
-TYPE_SID = 'sid'
-TYPE_TID = 'tid'
-TYPE_UNI = 'uni'
-TYPE_S16 = 's16'
-TYPE_U16 = 'u16'
-TYPE_S8  = 's8'
-TYPE_U8  = 'u8'
-TYPE_VAR = 'var'
-TYPE_GAP = 'gap'
-TYPE_STR = 'str'
-TYPE_STZ = 'stz'
+# maybe should be in some enum?
+TYPE_4CC = "4cc"
+TYPE_D64 = "d64"
+TYPE_S64 = "s64"
+TYPE_U64 = "u64"
+TYPE_S32 = "s32"
+TYPE_U32 = "u32"
+TYPE_F32 = "f32"
+TYPE_SID = "sid"
+TYPE_TID = "tid"
+TYPE_UNI = "uni"
+TYPE_S16 = "s16"
+TYPE_U16 = "u16"
+TYPE_S8 = "s8"
+TYPE_U8 = "u8"
+TYPE_VAR = "var"
+TYPE_GAP = "gap"
+TYPE_STR = "str"
+TYPE_STZ = "stz"
 
 TYPES_SIZE = {
     TYPE_D64: 8,
@@ -37,15 +38,15 @@ TYPES_SIZE = {
     TYPE_U16: 2,
     TYPE_S8: 1,
     TYPE_U8: 1,
-    TYPE_VAR: 1, #variable, min 1
-    TYPE_GAP: -1, #variable
-    TYPE_STR: -1, #variable
-    TYPE_STZ: -1, #variable
+    TYPE_VAR: 1,  # variable, min 1
+    TYPE_GAP: -1,  # variable
+    TYPE_STR: -1,  # variable
+    TYPE_STZ: -1,  # variable
 }
-#not used ATM, just some (rather obvious) doc
+# not used ATM, just some (rather obvious) doc
 TYPES_INFO = {
     TYPE_SID: "ShortID (uint32_t)",
-    TYPE_TID: "target ShortID (uint32_t)", #same thing but for easier understanding of output
+    TYPE_TID: "target ShortID (uint32_t)",  # same thing but for easier understanding of output
     TYPE_UNI: "union (float / int32_t)",
     TYPE_D64: "double",
     TYPE_F32: "float",
@@ -56,9 +57,9 @@ TYPES_INFO = {
     TYPE_U32: "uint32_t",
     TYPE_S16: "int16_t",
     TYPE_U16: "uint16_t",
-    TYPE_S8 : "int8_t",
-    TYPE_U8 : "uint8_t",
-    TYPE_VAR: "variable size", #u8/u16/u32
+    TYPE_S8: "int8_t",
+    TYPE_U8: "uint8_t",
+    TYPE_VAR: "variable size",  # u8/u16/u32
     TYPE_GAP: "byte gap",
     TYPE_STR: "string",
     TYPE_STZ: "string (null-terminated)",
@@ -67,12 +68,12 @@ TYPES_INFO = {
 
 # base parent class for nodes
 class NodeElement(object):
-    __slots__ = ['__nodename', '_parent', '_children', '_root', '_error_count', '_skip_count', '_omax']
+    __slots__ = ["__nodename", "_parent", "_children", "_root", "_error_count", "_skip_count", "_omax"]
 
     def __init__(self, parent, nodename):
         self.__nodename = nodename
         self._parent = parent
-        self._children = None #lazy init, reduces some MBs of memory when we can have lots of nodes
+        self._children = None  # lazy init, reduces some MBs of memory when we can have lots of nodes
         if parent is None:
             self._root = self
         else:
@@ -92,7 +93,7 @@ class NodeElement(object):
         if not node:
             return
         if self._children is None:
-            self._children = [] #lazy init!
+            self._children = []  # lazy init!
         self._children.append(node)
 
     def add_error(self, msg):
@@ -101,10 +102,10 @@ class NodeElement(object):
 
     # *** external access ***
 
-    def get_attrs(self): #generic access to node's attributes
-        return {} #use throw away dicts
+    def get_attrs(self):  # generic access to node's attributes
+        return {}  # use throw away dicts
 
-    def get_attr(self, attr): #access to node's attribute (faster than get_attrs)
+    def get_attr(self, attr):  # access to node's attribute (faster than get_attrs)
         return None
 
     def get_nodename(self):
@@ -116,7 +117,7 @@ class NodeElement(object):
         return self._parent
 
     def get_children(self):
-        #if self._children is None:
+        # if self._children is None:
         #    self._children = [] #lazy init!
         return self._children
 
@@ -125,7 +126,6 @@ class NodeElement(object):
 
     def get_name(self):
         return None
-
 
     def get_error_count(self):
         return self._error_count
@@ -147,10 +147,10 @@ class NodeElement(object):
 
 # root node with special definitions (represents a bank)
 class NodeRoot(NodeElement):
-    __slots__ = ['__r', '__filename', '__path', '_version', '_id', '_lang', '_feedback', '_custom', '_subversion', '_names', '_strings']
+    __slots__ = ["__r", "__filename", "__path", "_version", "_id", "_lang", "_feedback", "_custom", "_subversion", "_names", "_strings"]
 
     def __init__(self, r, version=0):
-        super(NodeRoot, self).__init__(None, 'root')
+        super(NodeRoot, self).__init__(None, "root")
         self.__r = r
         self.__filename = r.get_filename()
         self.__path = r.get_path()
@@ -164,14 +164,13 @@ class NodeRoot(NodeElement):
         self._names = None
         self._strings = []
 
-
     # *** inheritance ***
 
     def get_attrs(self):
         attrs = OrderedDict([
-            ('filename', self.__filename),
-            ('path', self.__path),
-            ('version', self._version),
+            ("filename", self.__filename),
+            ("path", self.__path),
+            ("version", self._version),
         ])
         return attrs
 
@@ -186,7 +185,7 @@ class NodeRoot(NodeElement):
 
     def get_bankname(self):
         # bank is usually hashed and used as bank's sid
-        bankname = os.path.basename(self.__filename) #[:-4] #
+        bankname = os.path.basename(self.__filename)  # [:-4] #
         bankname = os.path.splitext(bankname)[0]
         return bankname
 
@@ -249,10 +248,10 @@ class NodeRoot(NodeElement):
 
 # logical node container of other nodes, with data reading helpers (represents a class)
 class NodeObject(NodeElement):
-    __slots__ = ['__r', '__name', 'lastval', '_index']
+    __slots__ = ["__r", "__name", "lastval", "_index"]
 
     def __init__(self, parent, r, name):
-        super(NodeObject, self).__init__(parent, 'object')
+        super(NodeObject, self).__init__(parent, "object")
         self.__r = r
         self.__name = name
         self._index = None
@@ -262,16 +261,16 @@ class NodeObject(NodeElement):
 
     def get_attrs(self):
         attrs = OrderedDict([
-            ('name', self.__name),
+            ("name", self.__name),
         ])
         if self._index is not None:
-            attrs['index'] = self._index
+            attrs["index"] = self._index
         return attrs
 
     def get_attr(self, attr):
-        if attr == 'name':
+        if attr == "name":
             return self.__name
-        if attr == 'index':
+        if attr == "index":
             return self._index
         return None
 
@@ -373,7 +372,7 @@ class NodeObject(NodeElement):
                 raise ParseError("error reading past object (offset %08x + read %x)" % (offset, read_size), self)
 
         if value is None:
-            if   type == TYPE_4CC:
+            if type == TYPE_4CC:
                 value = r.fourcc()
             elif type == TYPE_S64:
                 value = r.s64()
@@ -384,7 +383,7 @@ class NodeObject(NodeElement):
             elif type == TYPE_U32 or type == TYPE_SID or type == TYPE_TID:
                 value = r.u32()
                 if value == 0xFFFFFFFF:
-                    value = -1 #clearly show (happens in rare cases)
+                    value = -1  # clearly show (happens in rare cases)
             elif type == TYPE_S16:
                 value = r.s16()
             elif type == TYPE_U16:
@@ -393,7 +392,7 @@ class NodeObject(NodeElement):
                 value = r.s8()
             elif type == TYPE_U8:
                 value = r.u8()
-                #if value == 0xFF:
+                # if value == 0xFF:
                 #    value = -1
             elif type == TYPE_F32:
                 value = r.f32()
@@ -416,11 +415,11 @@ class NodeObject(NodeElement):
                 max = 0
                 while True:
                     elem = r.s8()
-                    if elem == 0 or elem < 0: #ASCII 128b only
+                    if elem == 0 or elem < 0:  # ASCII 128b only
                         break
                     stz += chr(elem)
                     max += 1
-                    if max > 255: #arbitary max
+                    if max > 255:  # arbitary max
                         raise ValueError("long string")
                 value = stz
 
@@ -434,14 +433,14 @@ class NodeObject(NodeElement):
 
             elif type == TYPE_VAR:
                 cur = r.u8()
-                value = (cur & 0x7F)
+                value = cur & 0x7F
 
                 max = 0
                 while (cur & 0x80) and max < 10:
                     cur = r.u8()
                     value = (value << 7) | (cur & 0x7F)
                     max += 1
-                if max >= 10: #arbitary max
+                if max >= 10:  # arbitary max
                     raise ValueError("unexpected variable loop count")
             else:
                 raise ValueError("unknown field type " + type)
@@ -450,7 +449,7 @@ class NodeObject(NodeElement):
         self.lastval = value
         # originally each field could became a new property (obj.name=value)
         # but it's disabled to use slots and keep memory size down, plus it wasn't very useful
-        #self.__dict__[name] = value
+        # self.__dict__[name] = value
 
         # register new field as info
         child = NodeField(self, offset, type, name, value)
@@ -464,7 +463,7 @@ class NodeObject(NodeElement):
         self.append(child)
 
         # usually will fail by reading past object but in rare cases can generate too many fields
-        if count > 0x30000: #arbitary max (seen ~178879 = 0x2BABF Cp2077)
+        if count > 0x30000:  # arbitary max (seen ~178879 = 0x2BABF Cp2077)
             raise ParseError("unlikely count %s" % count, self)
         if subname is None:
             subname = name
@@ -472,17 +471,17 @@ class NodeObject(NodeElement):
 
     # register a list with items
     def items(self, name, items):
-        #child = NodeList(self, name)
+        # child = NodeList(self, name)
         child = NodeObject(self, None, name)
         self.append(child)
 
-        #adding item.index would modify the original list
+        # adding item.index would modify the original list
         for item in items:
             child.append(item)
         return child
 
     # register and add existing list subelement
-    #def list_node(self, name):
+    # def list_node(self, name):
     #    if name not in self.__dict__:
     #        child = NodeList(self, name)
     #        self.__dict__[name] = child.get_children()
@@ -497,8 +496,8 @@ class NodeObject(NodeElement):
     def node(self, name):
         obj = NodeObject(self, self.__r, name)
         self.append(obj)
-        #self.__dict__[name] = obj
-        #self.lastval = obj
+        # self.__dict__[name] = obj
+        # self.lastval = obj
         return obj
 
     # *** other (chained) ***
@@ -534,16 +533,16 @@ class NodeObject(NodeElement):
         offset = self.__r.current()
         omax = self._omax
 
-        #TODO improve
+        # TODO improve
         return (omax, offset)
 
 
 # simple subnode container (represents an array)
 class NodeList(NodeElement):
-    __slots__ = ['__name']
+    __slots__ = ["__name"]
 
     def __init__(self, parent, name):
-        super(NodeList, self).__init__(parent, 'list')
+        super(NodeList, self).__init__(parent, "list")
         self.__name = name
 
     # *** inheritance ***
@@ -554,15 +553,15 @@ class NodeList(NodeElement):
             count = len(self._children)
 
         attrs = OrderedDict([
-            ('name', self.__name),
-            ('count', count),
+            ("name", self.__name),
+            ("count", count),
         ])
         return attrs
 
     def get_attr(self, attr):
-        if attr == 'name':
+        if attr == "name":
             return self.__name
-        if attr == 'count':
+        if attr == "count":
             count = 0
             if self._children:
                 count = len(self._children)
@@ -575,10 +574,10 @@ class NodeList(NodeElement):
 
 # semi-leaf node describing a physical data "field" (represents a primitive member)
 class NodeField(NodeElement):
-    __slots__ = ['__offset', '__type', '__name', '__value', '__fmt', '__hashtype', '__row']
+    __slots__ = ["__offset", "__type", "__name", "__value", "__fmt", "__hashtype", "__row"]
 
     def __init__(self, parent, offset, type, name, value):
-        super(NodeField, self).__init__(parent, 'field')
+        super(NodeField, self).__init__(parent, "field")
         self.__offset = offset
         self.__type = type
         self.__name = name
@@ -592,46 +591,46 @@ class NodeField(NodeElement):
     def get_attrs(self):
         attrs = OrderedDict()
         if self.__offset:
-            attrs['offset'] = self.__offset
-        attrs['type'] = self.__type
-        attrs['name'] = self.__name
-        attrs['value'] = self.__value
+            attrs["offset"] = self.__offset
+        attrs["type"] = self.__type
+        attrs["name"] = self.__name
+        attrs["value"] = self.__value
         if self.__fmt:
-            attrs['valuefmt'] = self.__fmt.format(self.__type, self.__value)
+            attrs["valuefmt"] = self.__fmt.format(self.__type, self.__value)
 
         if self.__type in [TYPE_SID, TYPE_TID]:
             row = self._get_namerow()
             if row:
                 if row.hashname and self.__hashtype != wdefs.fnv_no:
-                    attrs['hashname'] = row.hashname
+                    attrs["hashname"] = row.hashname
                 if row.guidname:
-                    attrs['guidname'] = row.guidname
+                    attrs["guidname"] = row.guidname
                 if row.path:
-                    attrs['path'] = row.path
+                    attrs["path"] = row.path
                 if row.objpath:
-                    attrs['objpath'] = row.objpath
+                    attrs["objpath"] = row.objpath
 
         return attrs
 
     def get_attr(self, attr):
-        if attr == 'offset':
+        if attr == "offset":
             return self.__offset
-        if attr == 'type':
+        if attr == "type":
             return self.__type
-        if attr == 'name':
+        if attr == "name":
             return self.__name
-        if attr == 'value':
+        if attr == "value":
             return self.__value
-        if attr == 'valuefmt':
+        if attr == "valuefmt":
             if self.__fmt:
                 return self.__fmt.format(self.__type, self.__value)
             return None
-        if attr == 'hashname':
+        if attr == "hashname":
             row = self._get_namerow()
             if row and row.hashname and self.__hashtype != wdefs.fnv_no:
                 return row.hashname
             return None
-        if attr == 'guidname': # and self.__row
+        if attr == "guidname":  # and self.__row
             row = self._get_namerow()
             if row:
                 return row.guidname
@@ -659,12 +658,12 @@ class NodeField(NodeElement):
 
     def bit(self, name, value, bit, mask=1, fmt=None):
         bitvalue = (value >> bit) & mask
-        child = self.subfield('bit' + str(bit), name, bitvalue)
+        child = self.subfield("bit" + str(bit), name, bitvalue)
         if fmt:
             child.fmt(fmt)
         elif mask > 1:
             child.fmt(wdefs.fmt_hex)
-        return self #to simplify chaining
+        return self  # to simplify chaining
 
     def u8i(self, name, value):
         return self.subfield(TYPE_U8, name, value)
@@ -679,7 +678,7 @@ class NodeField(NodeElement):
         return self.u16(name, value).fmt(wdefs.fmt_hexfix)
 
     def subfield(self, type, name, value):
-        subfield = NodeField(self, None, type, name, value) #don't pass self.__offset
+        subfield = NodeField(self, None, type, name, value)  # don't pass self.__offset
         self.append(subfield)
         return subfield
 
@@ -709,10 +708,10 @@ class NodeField(NodeElement):
 
 # leaf node that signals a portion of data skipped
 class NodeSkip(NodeElement):
-    __slots__ = ['__offset', '__size']
+    __slots__ = ["__offset", "__size"]
 
     def __init__(self, parent, offset, size):
-        super(NodeSkip, self).__init__(parent, 'skip')
+        super(NodeSkip, self).__init__(parent, "skip")
         self.__offset = offset
         self.__size = size
 
@@ -720,24 +719,25 @@ class NodeSkip(NodeElement):
 
     def get_attrs(self):
         attrs = OrderedDict([
-            ('offset', self.__offset),
-            ('size', self.__size),
+            ("offset", self.__offset),
+            ("size", self.__size),
         ])
         return attrs
 
+
 # leaf node that signals some error in data
 class NodeError(NodeElement):
-    __slots__ = ['__msg']
+    __slots__ = ["__msg"]
 
     def __init__(self, parent, msg):
-        super(NodeError, self).__init__(parent, 'error')
+        super(NodeError, self).__init__(parent, "error")
         self.__msg = msg
 
     # *** inheritance ***
 
     def get_attrs(self):
         attrs = OrderedDict([
-            ('message', self.__msg),
+            ("message", self.__msg),
         ])
         return attrs
 
@@ -746,7 +746,7 @@ class NodeError(NodeElement):
 # This delayed creation is needed b/c objs set current offset, and it only
 # makes sense after previous object is first read
 class NodeListIterator:
-    __slots__ = ['__parent', '__r', '__subname', '__subname', '__index', '__count', '__list']
+    __slots__ = ["__parent", "__r", "__subname", "__subname", "__index", "__count", "__list"]
 
     def __init__(self, parent, r, subname, count):
         self.__parent = parent
@@ -759,7 +759,7 @@ class NodeListIterator:
         self.__index = 0
         return self
 
-    def _next(self): # for python2
+    def _next(self):  # for python2
         list = self.__parent.get_children()
         if list is None:
             list_len = -1
@@ -771,25 +771,24 @@ class NodeListIterator:
 
         if self.__index < list_len:
             return list[self.__index]
-        #if self.__index < len(self.__list):
+        # if self.__index < len(self.__list):
         #    return self.__list[self.__index]
 
         obj = NodeObject(self.__parent, self.__r, self.__subname)
         obj._index = self.__index
 
-        #self.__list.append(obj)
+        # self.__list.append(obj)
         self.__parent.append(obj)
         self.__index += 1
         return obj
 
-
-    def next(self): # for python2
+    def next(self):  # for python2
         return self._next()
 
-    def __next__(self): # for python3
+    def __next__(self):  # for python3
         return self._next()
 
-    #pre-generate all (empty) objects, used when object's fields need to be read in weird order
+    # pre-generate all (empty) objects, used when object's fields need to be read in weird order
     def preload(self):
         items = []
         for item in self:

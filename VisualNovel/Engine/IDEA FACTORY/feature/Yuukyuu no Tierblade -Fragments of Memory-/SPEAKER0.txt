@@ -1,0 +1,46 @@
+pattern:
+call <func>, FFFFFF00
+return
+
+call <func>, FFFFFF00
+call <func>, FFFFFF01
+return
+
+call <func>, FFFFFF00
+return
+
+raw 11, =0, =1
+raw 11, =0, =1
+raw 11, =0, =1
+raw 11, =0, =1
+call <func>, FFFFFF02, 80000000
+call <func>, FFFFFF01, 80000003, 80000002, 80000001
+call <func>, FFFFFF00, 80000003, 80000002, 80000001, 80000000
+call <func>, FFFFFF01, 80000003, 80000002, 80000001
+call <func>, FFFFFF00, 80000003, 80000002, 80000001, 80000000
+call <func>, FFFFFF00, =1
+raw 12
+raw 12
+raw 12
+raw 12
+return
+
+raw 11, =0, =1
+raw 11, =0, =1
+raw 11, =0, =1
+raw 11, =0, =1
+call <func>, FFFFFF01, 80000003, 80000002, 80000001
+call <func>, FFFFFF02, 80000000
+call <func>, FFFFFF00, 80000003, 80000002, 80000001, 80000000
+call <func>, FFFFFF03, 80000003, 80000002, 80000001
+call <func>, FFFFFF04, 80000000
+call <func>, FFFFFF00, 80000003, 80000002, 80000001, 80000000
+call <func>, FFFFFF05, 80000003, 80000002, 80000001
+call <func>, FFFFFF06, 80000000
+call <func>, FFFFFF00, 80000003, 80000002, 80000001, 80000000
+call <func>, FFFFFF00, =1
+raw 12
+raw 12
+raw 12
+raw 12
+return
