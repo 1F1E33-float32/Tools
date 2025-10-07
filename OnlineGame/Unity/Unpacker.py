@@ -1,13 +1,14 @@
-import os
-import json
 import argparse
-from tqdm import tqdm
+import json
+import os
 
 import UnityPy
-from UnityPy.enums.ClassIDType import ClassIDType
+from tqdm import tqdm
 from UnityPy.classes import Font, MonoBehaviour, Object, PPtr
+from UnityPy.enums.ClassIDType import ClassIDType
 
 UnityPy.config.FALLBACK_UNITY_VERSION = "2022.3.32f1"
+
 
 def export_obj(obj, destination, append_name=False, append_path_id=False, export_unknown_as_typetree=False):
     data = obj.read()
@@ -36,14 +37,14 @@ def extract_assets(source, target, include_types=None, ignore_first_dirs=0, appe
     exported = []
 
     type_order = list(EXPORT_TYPES.keys())
-    
+
     def order_key(item):
         if item[1].type in type_order:
             idx = type_order.index(item[1].type)
         else:
             idx = len(type_order)
         return idx
-    
+
     print("Filtering and sorting items...")
     filtered_items = []
     for item in env.container.items():
@@ -54,37 +55,34 @@ def extract_assets(source, target, include_types=None, ignore_first_dirs=0, appe
 
     # 对过滤后的项目进行排序
     sorted_items = sorted(filtered_items, key=order_key)
-    
+
     for obj_path, obj in tqdm(sorted_items, ncols=150):
         if include_types and obj.type.name not in include_types:
             continue
 
         parts = obj_path.split("/")[ignore_first_dirs:]
-        
+
         filtered_parts = []
         for p in parts:
             if p:
                 filtered_parts.append(p)
-        
+
         dest_dir = os.path.join(target, *filtered_parts)
-        
+
         os.makedirs(os.path.dirname(dest_dir), exist_ok=True)
 
-        exports = export_obj(
-            obj, 
-            dest_dir, 
-            append_path_id=append_path_id, 
-            export_unknown_as_typetree=export_unknown_as_typetree
-        )
-        
+        exports = export_obj(obj, dest_dir, append_path_id=append_path_id, export_unknown_as_typetree=export_unknown_as_typetree)
+
         exported.extend(exports)
 
     return exported
+
 
 def exportTextAsset(obj, fp, extension=".bytes"):
     with open(f"{fp}{extension}", "wb") as f:
         f.write(obj.m_Script.encode("utf-8", "surrogateescape"))
     return [(obj.assets_file, obj.object_reader.path_id)]
+
 
 def exportFont(obj: Font, fp, extension=""):
     if obj.m_FontData:
@@ -95,17 +93,20 @@ def exportFont(obj: Font, fp, extension=""):
             f.write(bytes(obj.m_FontData))
     return [(obj.assets_file, obj.object_reader.path_id)]
 
+
 def exportMesh(obj, fp, extension=".obj"):
     with open(f"{fp}{extension}", "wt", encoding="utf8", newline="") as f:
         f.write(obj.export())
     return [(obj.assets_file, obj.object_reader.path_id)]
+
 
 def exportShader(obj, fp, extension=".txt"):
     with open(f"{fp}{extension}", "wt", encoding="utf8", newline="") as f:
         f.write(obj.export())
     return [(obj.assets_file, obj.object_reader.path_id)]
 
-def exportMonoBehaviour(obj, fp, extension= ""):
+
+def exportMonoBehaviour(obj, fp, extension=""):
     export = None
     if obj.object_reader.serialized_type.node:
         export = obj.object_reader.read_typetree()
@@ -129,6 +130,7 @@ def exportMonoBehaviour(obj, fp, extension= ""):
         f.write(export)
     return [(obj.assets_file, obj.object_reader.path_id)]
 
+
 def exportAudioClip(obj, fp, extension=""):
     samples = obj.samples
     if len(samples) == 0:
@@ -143,6 +145,7 @@ def exportAudioClip(obj, fp, extension=""):
                 f.write(clip_data)
     return [(obj.assets_file, obj.object_reader.path_id)]
 
+
 def exportSprite(obj, fp, extension=".png"):
     obj.image.save(f"{fp}{extension}")
     exported = [(obj.assets_file, obj.object_reader.path_id), (obj.m_RD.texture.assetsfile, obj.m_RD.texture.path_id)]
@@ -152,10 +155,12 @@ def exportSprite(obj, fp, extension=".png"):
         exported.append((alpha_assets_file, alpha_path_id))
     return exported
 
+
 def exportTexture2D(obj, fp, extension=".png"):
     if obj.m_Width:
         obj.image.save(f"{fp}{extension}")
     return [(obj.assets_file, obj.object_reader.path_id)]
+
 
 def exportGameObject(obj, fp, extension=""):
     exported = [(obj.assets_file, obj.object_reader.path_id)]
@@ -172,6 +177,7 @@ def exportGameObject(obj, fp, extension=""):
             print(e)
     return exported
 
+
 EXPORT_TYPES = {
     ClassIDType.GameObject: exportGameObject,
     ClassIDType.Sprite: exportSprite,
@@ -185,6 +191,7 @@ EXPORT_TYPES = {
 }
 
 MONOBEHAVIOUR_TYPETREES = {}
+
 
 def crawl_obj(obj, ret=None):
     if not ret:
@@ -213,14 +220,16 @@ def crawl_obj(obj, ret=None):
             crawl_obj(value, ret)
     return ret
 
-def flatten(l):
-    for el in list(l):
+
+def flatten(target):
+    for el in list(target):
         if isinstance(el, (list, tuple)):
             yield from flatten(el)
         elif isinstance(el, dict):
             yield from flatten(el.values())
         else:
             yield el
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Export Unity assets with fixed filtering logic.")

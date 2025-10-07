@@ -6,7 +6,6 @@ requires-python = ">=3.12"
 dependencies = [
     "av>=15.0.0",
     "chardet>=5.2.0",
-    "cryptography>=45.0.5",
     "flatbuffers>=25.2.10",
     "lupa>=2.5",
     "lzss>=0.3",
@@ -15,6 +14,7 @@ dependencies = [
     "openpyxl>=3.1.5",
     "pandas>=2.3.2",
     "pefile>=2024.8.26",
+    "pycryptodome>=3.23.0",
     "regex>=2025.7.34",
     "requests>=2.32.4",
     "rich>=14.1.0",
