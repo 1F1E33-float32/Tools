@@ -1,5 +1,3 @@
-# Reference: https://github.com/robbie01/stcm2-asm
-
 import struct
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple

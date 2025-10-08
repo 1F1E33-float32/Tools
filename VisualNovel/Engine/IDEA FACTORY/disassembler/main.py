@@ -1,5 +1,3 @@
-# Reference: https://github.com/robbie01/stcm2-asm
-
 import argparse
 from pathlib import Path
 

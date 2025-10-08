@@ -1,3 +1,10 @@
+# Reference
+https://github.com/YuriSizuku/GalgameReverse/tree/master/project/krkr
+
+https://github.com/arcusmaximus/KirikiriTools/tree/master/KirikiriDescrambler
+
+https://github.com/UlyssesWu/FreeMote
+
 # Kirikiri2 / KirikiriZ
 如果是`.ks`结尾的明文脚本，使用`parse_ks.py`解析ks，遇到新的模式请尝试自己补全或者开issue。
 
