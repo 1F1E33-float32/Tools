@@ -1,15 +1,25 @@
 import argparse
 import os
 import re
-import sqlite3
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from itertools import repeat
+from pathlib import Path
 
+import apsw
 import requests
 from requests.adapters import HTTPAdapter
 from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn, TimeRemainingColumn
 from urllib3.util.retry import Retry
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--RAW", default=r"/mnt/e/OnlineGame_Dataset/Umamusume/RAW")
+    parser.add_argument("--meta", default=r"/mnt/e/OnlineGame_Dataset/Umamusume/RAW/meta")
+    parser.add_argument("--thread", type=int, default=32)
+    return parser.parse_args()
+
 
 columns = (
     SpinnerColumn(),
@@ -40,13 +50,41 @@ TYPE_FILTERS = {
     "sound": lambda name: name.lower().startswith("sound/c"),
 }
 
-
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--RAW", default=r"/mnt/e/OnlineGame_Dataset/Umamusume/RAW")
-    parser.add_argument("--meta", default=r"/mnt/e/OnlineGame_Dataset/Umamusume/RAW/meta")
-    parser.add_argument("--thread", type=int, default=32)
-    return parser.parse_args()
+DEFAULT_DATABASE_KEY = bytes([
+    0x9C,
+    0x2B,
+    0xAB,
+    0x97,
+    0xBC,
+    0xF8,
+    0xC0,
+    0xC4,
+    0xF1,
+    0xA9,
+    0xEA,
+    0x78,
+    0x81,
+    0xA2,
+    0x13,
+    0xF6,
+    0xC9,
+    0xEB,
+    0xF9,
+    0xD8,
+    0xD4,
+    0xC6,
+    0xA8,
+    0xE4,
+    0x3C,
+    0xE5,
+    0xA2,
+    0x59,
+    0xBD,
+    0xE7,
+    0xE9,
+    0xFD,
+])
+DEFAULT_CIPHER_NAME = "chacha20"
 
 
 class Game_API:
@@ -82,19 +120,34 @@ class Game_API:
                 time.sleep(2)
 
 
+def _open_encrypted_meta(meta_path: Path):
+    connection = apsw.Connection(str(meta_path), flags=apsw.SQLITE_OPEN_READONLY)
+    connection.pragma("cipher", DEFAULT_CIPHER_NAME)
+    connection.pragma("hexkey", DEFAULT_DATABASE_KEY.hex())
+    connection.pragma("user_version")
+    return connection
+
+
 def load_manifest(meta_path):
     if not os.path.exists(meta_path):
         raise FileNotFoundError(f"Meta database not found: {meta_path}")
 
-    conn = sqlite3.connect(meta_path)
-    conn.row_factory = sqlite3.Row
+    connection = _open_encrypted_meta(Path(meta_path))
     try:
-        cursor = conn.cursor()
-        cursor.execute("SELECT n, h, m, l FROM a")
-        rows = cursor.fetchall()
+        cursor = connection.cursor()
+        rows = list(cursor.execute("SELECT n, h, m, l FROM a"))
     finally:
-        conn.close()
-    return rows
+        connection.close()
+
+    manifest = []
+    for name, hash_name, asset_type, raw_size in rows:
+        manifest.append({
+            "n": name,
+            "h": hash_name,
+            "m": asset_type,
+            "l": raw_size,
+        })
+    return manifest
 
 
 def _prepare_task(row, raw_root):

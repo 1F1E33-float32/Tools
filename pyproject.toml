@@ -4,6 +4,7 @@ version = "1.0.0"
 description = "game tools"
 requires-python = ">=3.12"
 dependencies = [
+    "apsw-sqlite3mc>=3.50.4.0",
     "av>=15.0.0",
     "chardet>=5.2.0",
     "flatbuffers>=25.2.10",
