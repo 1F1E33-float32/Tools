@@ -1,16 +1,18 @@
-from ruamel.yaml import YAML
-from typing import Callable, Dict, List, Any
+from typing import Any, Callable, Dict, List
 
-from .constants import *
-from .script_data import *
+from ruamel.yaml import YAML
+
+from .constants import FLAG_FUNC, FLAG_GLOBALVAR, FLAG_STRINGVAR
 from .reader import ScriptReader
+from .script_data import GlobalScript, Instruction, Opcode
+
 
 class Disassembler:
     def __init__(self, config_path: str):
         self.yaml = YAML()
         self.yaml.default_flow_style = False
         self.yaml.indent(sequence=4, offset=2)
-        with open(config_path, 'r', encoding='utf-8') as file:
+        with open(config_path, "r", encoding="utf-8") as file:
             self.config = self.yaml.load(file)
         self.reader = ScriptReader(self.config)
         self.opcodes = self.load_opcodes(self.config["opcodes"])
@@ -95,16 +97,16 @@ class Disassembler:
         labels: Dict[int, str] = {}
         for addr, ins in enumerate(instructions):
             mnemonic = self.get_opcode(ins.opcode).name
-            if addr == 0 or mnemonic == 'START':
+            if addr == 0 or mnemonic == "START":
                 self.make_label(labels, addr)
-            if mnemonic in ('JMP', 'JMP_IF_FALSE', 'JMP_IF_TRUE'):
+            if mnemonic in ("JMP", "JMP_IF_FALSE", "JMP_IF_TRUE"):
                 self.make_label(labels, addr + 1)
                 self.make_label(labels, ins.operand + 1)
         return labels
 
     def make_label(self, labels: Dict[int, str], addr: int) -> None:
         if addr not in labels:
-            labels[addr] = f'LABEL_{len(labels) + 1}'
+            labels[addr] = f"LABEL_{len(labels) + 1}"
 
     def disassemble(self, script_path: str) -> None:
         script = self.reader.read_script_from_file(script_path)
@@ -155,34 +157,26 @@ class Disassembler:
     def disassemble_functions(self, functions: Dict[int, Any]) -> Dict[str, Any]:
         disassembled_functions = {}
         for func in functions:
-            code = functions[func]['code']
+            code = functions[func]["code"]
             data = {
-                'string_table': functions[func]['string_table'],
-                'int_var_names': functions[func]['int_var_names'],
-                'string_var_names': functions[func]['string_var_names'],
+                "string_table": functions[func]["string_table"],
+                "int_var_names": functions[func]["int_var_names"],
+                "string_var_names": functions[func]["string_var_names"],
             }
-            disassembled_functions[f'FUNC_{hex(func)}'] = {
-                'code': self.disassemble_code(code, data),
-                **data
-            }
+            disassembled_functions[f"FUNC_{hex(func)}"] = {"code": self.disassemble_code(code, data), **data}
         return disassembled_functions
 
     # --- Handler methods now return structured dictionaries ---
 
     def handler_val(self, **kwargs) -> dict:
-        ins = kwargs['ins']
-        mnemonic = kwargs['mnemonic']
-        data = kwargs['data']
+        ins = kwargs["ins"]
+        mnemonic = kwargs["mnemonic"]
+        data = kwargs["data"]
         # Update register
         self.registers[0] = ins.operand
         operand = ins.operand & 0xFFFFFFFF
 
-        instr = {
-            "mnemonic": mnemonic,
-            "operand_raw": ins.operand,
-            "operand_display": None,
-            "comment": ""
-        }
+        instr = {"mnemonic": mnemonic, "operand_raw": ins.operand, "operand_display": None, "comment": ""}
         is_string_variable, is_global_string_variable, is_global_int_variable = self.is_variable(data, operand)
         if is_global_string_variable:
             instr["operand_display"] = f"[GLOBAL_STRING_VAR] {operand ^ (FLAG_GLOBALVAR | FLAG_STRINGVAR)}"
@@ -195,29 +189,20 @@ class Disassembler:
         return instr
 
     def handler_register(self, **kwargs) -> dict:
-        ins = kwargs['ins']
-        mnemonic = kwargs['mnemonic']
-        instr = {
-            "mnemonic": mnemonic,
-            "operand_display": f"$R{ins.operand}",
-            "comment": ""
-        }
-        if mnemonic == 'PUSH':
+        ins = kwargs["ins"]
+        mnemonic = kwargs["mnemonic"]
+        instr = {"mnemonic": mnemonic, "operand_display": f"$R{ins.operand}", "comment": ""}
+        if mnemonic == "PUSH":
             self.stack.append(self.registers[ins.operand])
-        elif mnemonic == 'POP':
+        elif mnemonic == "POP":
             self.registers[ins.operand] = self.stack.pop()
         return instr
 
     def handler_param(self, **kwargs) -> dict:
-        ins = kwargs['ins']
-        mnemonic = kwargs['mnemonic']
-        data = kwargs['data']
-        result = {
-            "mnemonic": mnemonic,
-            "operand": ins.operand,
-            "param_type": None,
-            "comment": ""
-        }
+        ins = kwargs["ins"]
+        mnemonic = kwargs["mnemonic"]
+        data = kwargs["data"]
+        result = {"mnemonic": mnemonic, "operand": ins.operand, "param_type": None, "comment": ""}
         if ins.operand == 0:
             result["param_type"] = "@INT"
         elif ins.operand == 1:
@@ -236,42 +221,27 @@ class Disassembler:
         return result
 
     def handler_call(self, **kwargs) -> dict:
-        ins = kwargs['ins']
-        mnemonic = kwargs['mnemonic']
-        param_count = (ins.operand >> 16) & 0xffff
-        result = {
-            "mnemonic": mnemonic,
-            "operand": ins.operand,
-            "parameter_count": param_count,
-            "function_type": None,
-            "function": None,
-            "comment": ""
-        }
+        ins = kwargs["ins"]
+        mnemonic = kwargs["mnemonic"]
+        param_count = (ins.operand >> 16) & 0xFFFF
+        result = {"mnemonic": mnemonic, "operand": ins.operand, "parameter_count": param_count, "function_type": None, "function": None, "comment": ""}
         if ins.operand & FLAG_FUNC:
             result["function_type"] = "FUNC"
-            func_number = (ins.operand ^ FLAG_FUNC) & 0xffff
+            func_number = (ins.operand ^ FLAG_FUNC) & 0xFFFF
             result["function"] = self.script_functions.get(func_number, f"FUNC_{hex(func_number)}")
         else:
             result["function_type"] = "NATIVE"
-            func_number = ins.operand & 0xffff
+            func_number = ins.operand & 0xFFFF
             result["function"] = self.native_functions.get(func_number, f"CMD_{hex(func_number)}")
         return result
 
     def handler_load(self, **kwargs) -> dict:
-        ins = kwargs['ins']
-        mnemonic = kwargs['mnemonic']
-        data = kwargs['data']
+        ins = kwargs["ins"]
+        mnemonic = kwargs["mnemonic"]
+        data = kwargs["data"]
         register = self.registers[ins.operand] & 0xFFFFFFFF
 
-        result = {
-            "mnemonic": mnemonic,
-            "handler": "handler_load",
-            "register": ins.operand,
-            "resolved_value": register,
-            "resolved_type": None,
-            "resolved_name": None,
-            "comment": ""
-        }
+        result = {"mnemonic": mnemonic, "handler": "handler_load", "register": ins.operand, "resolved_value": register, "resolved_type": None, "resolved_name": None, "comment": ""}
         is_string_variable, is_global_string_variable, is_global_int_variable = self.is_variable(data, register)
         if is_global_string_variable:
             result["resolved_type"] = "GLOBAL_STRING_VAR"
@@ -288,14 +258,9 @@ class Disassembler:
         return result
 
     def handler_add(self, **kwargs) -> dict:
-        ins = kwargs['ins']
-        mnemonic = kwargs['mnemonic']
-        result = {
-            "mnemonic": mnemonic,
-            "operand": ins.operand,
-            "param_type": None,
-            "comment": ""
-        }
+        ins = kwargs["ins"]
+        mnemonic = kwargs["mnemonic"]
+        result = {"mnemonic": mnemonic, "operand": ins.operand, "param_type": None, "comment": ""}
         if ins.operand == 0:
             result["param_type"] = "@INT"
         elif ins.operand == 1:
@@ -305,24 +270,15 @@ class Disassembler:
         return result
 
     def handler_without_operand(self, **kwargs) -> dict:
-        mnemonic = kwargs['mnemonic']
-        return {
-            "mnemonic": mnemonic,
-            "operand": None,
-            "comment": ""
-        }
+        mnemonic = kwargs["mnemonic"]
+        return {"mnemonic": mnemonic, "operand": None, "comment": ""}
 
     def handler_variable_index(self, **kwargs) -> dict:
-        ins = kwargs['ins']
-        mnemonic = kwargs['mnemonic']
-        data = kwargs['data']
+        ins = kwargs["ins"]
+        mnemonic = kwargs["mnemonic"]
+        data = kwargs["data"]
 
-        result = {
-            "mnemonic": mnemonic,
-            "operand": ins.operand,
-            "variable_info": {},
-            "comment": ""
-        }
+        result = {"mnemonic": mnemonic, "operand": ins.operand, "variable_info": {}, "comment": ""}
         if ins.operand == -1:
             result["variable_info"] = {"value": -1}
         else:
@@ -347,14 +303,9 @@ class Disassembler:
         return result
 
     def handler_type(self, **kwargs) -> dict:
-        ins = kwargs['ins']
-        mnemonic = kwargs['mnemonic']
-        result = {
-            "mnemonic": mnemonic,
-            "operand": ins.operand,
-            "param_type": None,
-            "comment": ""
-        }
+        ins = kwargs["ins"]
+        mnemonic = kwargs["mnemonic"]
+        result = {"mnemonic": mnemonic, "operand": ins.operand, "param_type": None, "comment": ""}
         if ins.operand == 0:
             result["param_type"] = "@INT"
         elif ins.operand in (1, 2):
@@ -362,32 +313,23 @@ class Disassembler:
         return result
 
     def handler_simple(self, **kwargs) -> dict:
-        ins = kwargs['ins']
-        mnemonic = kwargs['mnemonic']
-        return {
-            "mnemonic": mnemonic,
-            "operand": ins.operand,
-            "comment": ""
-        }
+        ins = kwargs["ins"]
+        mnemonic = kwargs["mnemonic"]
+        return {"mnemonic": mnemonic, "operand": ins.operand, "comment": ""}
 
     def handler_jump(self, **kwargs) -> dict:
-        ins = kwargs['ins']
-        mnemonic = kwargs['mnemonic']
-        addr = kwargs['addr']
-        labels = kwargs['labels']
-        result = {
-            "mnemonic": mnemonic,
-            "target_label": labels.get(ins.operand + 1, ""),
-            "current_addr": addr,
-            "comment": ""
-        }
-        if mnemonic == 'JMP' and ins.operand == addr:
+        ins = kwargs["ins"]
+        mnemonic = kwargs["mnemonic"]
+        addr = kwargs["addr"]
+        labels = kwargs["labels"]
+        result = {"mnemonic": mnemonic, "target_label": labels.get(ins.operand + 1, ""), "current_addr": addr, "comment": ""}
+        if mnemonic == "JMP" and ins.operand == addr:
             result["comment"] = "Filler"
         return result
 
     def is_variable(self, data: Dict[str, Any], value: int) -> tuple[bool, bool, bool]:
-        is_string_variable  = len(data['string_var_names']) > 0 and (value ^ FLAG_STRINGVAR) < len(data['string_var_names']) and (value ^ FLAG_STRINGVAR) >= 0 
+        is_string_variable = len(data["string_var_names"]) > 0 and (value ^ FLAG_STRINGVAR) < len(data["string_var_names"]) and (value ^ FLAG_STRINGVAR) >= 0
         is_global_string_variable = len(self.global_data.string_var_names) > 0 and (value ^ (FLAG_GLOBALVAR | FLAG_STRINGVAR)) < len(self.global_data.string_var_names) and (value ^ (FLAG_GLOBALVAR | FLAG_STRINGVAR)) >= 0
         is_global_int_variable = len(self.global_data.int_var_names) > 0 and (value ^ FLAG_GLOBALVAR) < len(self.global_data.int_var_names) and (value ^ FLAG_GLOBALVAR) >= 0
-        
+
         return (is_string_variable, is_global_string_variable, is_global_int_variable)

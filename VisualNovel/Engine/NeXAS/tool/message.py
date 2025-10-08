@@ -1,4 +1,7 @@
+# Reference: https://steamdb.info/app/2185770/info/  GameAssembly.dll
+
 from enum import Enum
+
 
 class EscapeType(Enum):
     NONE = 0
@@ -23,6 +26,7 @@ class EscapeType(Enum):
     VOICE_OVER_PLAY = 19
     ESCAPE = 20
 
+
 class NeXAS_MessageData:
     escape_dictionary = {
         "@n": EscapeType.NEW_LINE,
@@ -45,37 +49,35 @@ class NeXAS_MessageData:
         "@d": EscapeType.TEXT_NO_DISP,
         "@l": EscapeType.VOICE_OVER_PLAY,
         "@@": EscapeType.ESCAPE,
-
-        '@H': EscapeType.FACE_TYPE,
-        '@j': EscapeType.FACE_TYPE,
-
+        "@H": EscapeType.FACE_TYPE,
+        "@j": EscapeType.FACE_TYPE,
     }
 
     def __init__(self):
         self.escape = EscapeType.NONE  # 转义类型
-        self.row = 0                   # 行号
-        self.index = 0                 # 当前行中字符位置
-        self.text = ""                 # 文本内容
-        self.command = ""              # 附加命令字符串
+        self.row = 0  # 行号
+        self.index = 0  # 当前行中字符位置
+        self.text = ""  # 文本内容
+        self.command = ""  # 附加命令字符串
 
     def __repr__(self):
-        return (f"<MsgData escape={self.escape.name}, row={self.row}, index={self.index}, text='{self.text}', command='{self.command}'>")
+        return f"<MsgData escape={self.escape.name}, row={self.row}, index={self.index}, text='{self.text}', command='{self.command}'>"
 
 
 def text_analyze(text: str):
     disp_message = ""
-    in_quotes = False                 # 是否处于「或『之间
-    allow_autoline = True             # 是否允许自动换行插入指令
+    in_quotes = False  # 是否处于「或『之间
+    allow_autoline = True  # 是否允许自动换行插入指令
     auto_line_break_triggered = False
     escape_type = EscapeType.NONE
     current_data = None
 
-    row = 0          # 当前行号
-    idx = 0          # 当前行中字符位置计数
-    ruby_count = 0   # 用于 RUBY 模式时计数遇到的 '@'
-    char_count = 0   # 当前行中已输出的字符数，用于判断自动换行
-    line_num = 1     # 总行数
-    result = []      # 保存所有的 NeXAS_MessageData 对象
+    row = 0  # 当前行号
+    idx = 0  # 当前行中字符位置计数
+    ruby_count = 0  # 用于 RUBY 模式时计数遇到的 '@'
+    char_count = 0  # 当前行中已输出的字符数，用于判断自动换行
+    line_num = 1  # 总行数
+    result = []  # 保存所有的 NeXAS_MessageData 对象
 
     while len(text) > 0:
         # 检查是否为转义码（至少2个字符）且当前未处于转义处理状态
@@ -118,7 +120,7 @@ def text_analyze(text: str):
             # 自动换行判断：原逻辑会插入换行指令 "@n"，现仅调整内部计数，不修改 disp_message
             if allow_autoline:
                 char_count += 1
-                if (char_count >= 27 and ch not in ["」", "』", "。", "，", "！", "？", "…", "—"] and len(text) >= 1 and text[0] not in ["」", "』", "。", "，", "！", "？", "…", "—"]):
+                if char_count >= 27 and ch not in ["」", "』", "。", "，", "！", "？", "…", "—"] and len(text) >= 1 and text[0] not in ["」", "』", "。", "，", "！", "？", "…", "—"]:
                     # text = "@n" + text
                     char_count = 0
                     line_num += 1

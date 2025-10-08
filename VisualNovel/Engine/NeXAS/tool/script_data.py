@@ -1,19 +1,23 @@
 from dataclasses import dataclass
-from typing import Dict, List, Any
+from typing import Any, Dict, List
+
 
 @dataclass
 class Opcode:
     id: int
     name: str
 
+
 @dataclass
 class Instruction:
     opcode: int
     operand: int
 
+
 @dataclass
 class Marker:
     count: int = 0
+
 
 @dataclass
 class Script:
@@ -24,6 +28,7 @@ class Script:
     string_var_names: Dict[int, str]
     banks_params: Dict[int, Any]
     functions: Dict[int, Any]
+
 
 @dataclass
 class GlobalScript:
