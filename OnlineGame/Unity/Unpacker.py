@@ -1,3 +1,5 @@
+# Reference: https://github.com/K0lb3/UnityPy/blob/master/UnityPy/tools/extractor.py
+
 import argparse
 import json
 import os
