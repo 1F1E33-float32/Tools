@@ -86,12 +86,7 @@ class ByteFile:
     def readu32p(self, pos: int) -> int:
         if pos + 3 >= len(self.b):
             return 0
-        return (
-            (self.b[pos + 3] << 24)
-            + (self.b[pos + 2] << 16)
-            + (self.b[pos + 1] << 8)
-            + self.b[pos]
-        )
+        return (self.b[pos + 3] << 24) + (self.b[pos + 2] << 16) + (self.b[pos + 1] << 8) + self.b[pos]
 
     def readu16p(self, pos: int) -> int:
         if pos + 1 >= len(self.b):

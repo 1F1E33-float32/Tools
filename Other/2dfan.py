@@ -3,15 +3,15 @@ import json
 import sys
 import time
 from pathlib import Path
-from tqdm import tqdm
 
 import requests
+from openpyxl import Workbook
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
+from tqdm import tqdm
 
-from openpyxl import Workbook
 
 def scrape_2dfan_month(year: int, month: int):
     driver = webdriver.Chrome()
@@ -35,6 +35,7 @@ def scrape_2dfan_month(year: int, month: int):
 
     driver.quit()
     return rows
+
 
 def query_vndb(name: str):
     payload = {
@@ -119,6 +120,7 @@ def enrich_with_vndb(rows: list):
 
     return out_rows
 
+
 def export_to_xlsx(rows: list, path: Path):
     wb = Workbook()
     ws = wb.active
@@ -130,6 +132,7 @@ def export_to_xlsx(rows: list, path: Path):
         ws.append([r["alttitle"], r["title"], r["2dfan_url"], r["vndb_url"]])
 
     wb.save(path)
+
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()

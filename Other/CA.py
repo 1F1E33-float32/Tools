@@ -1,10 +1,12 @@
-import os
-import av
 import argparse
+import os
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from rich.progress import Progress, BarColumn, TextColumn, TimeElapsedColumn, TimeRemainingColumn, MofNCompleteColumn
+
+import av
+from rich.progress import BarColumn, MofNCompleteColumn, Progress, TextColumn, TimeElapsedColumn, TimeRemainingColumn
 
 AUDIO_EXTENSIONS = (".wav", ".mp3", ".ogg", ".flac", ".opus")
+
 
 def process_audio_file(file_path):
     try:
@@ -14,6 +16,7 @@ def process_audio_file(file_path):
     except Exception as e:
         print(f"Error processing {file_path}: {e}")
         return 0  # Return 0 duration if there's an error
+
 
 def main(in_dir, num_processes):
     audio_files = []
@@ -25,11 +28,11 @@ def main(in_dir, num_processes):
             if file.lower().endswith(AUDIO_EXTENSIONS):
                 full_path = os.path.join(root, file)
                 audio_files.append(full_path)
-    
+
     if not audio_files:
         print("未在指定目录中找到音频文件。")
         return
-    
+
     with Progress(TextColumn("[progress.description]{task.description}"), BarColumn(), "[progress.percentage]{task.percentage:>3.1f}%", "•", MofNCompleteColumn(), "•", TimeElapsedColumn(), "|", TimeRemainingColumn()) as progress:
         total_task = progress.add_task("Total", total=len(audio_files))
 
@@ -42,6 +45,7 @@ def main(in_dir, num_processes):
 
     # Print the total duration in seconds
     print(f"Total duration of all audio files: {total_duration:.2f} seconds")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
