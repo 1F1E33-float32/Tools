@@ -1,5 +1,6 @@
 import argparse
 import os
+import re
 import sqlite3
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -23,9 +24,20 @@ columns = (
 
 RESOURCE_TYPE_MAP = {
     "story": "Windows/assetbundles",
+    "home": "Windows/assetbundles",
+    "race": "Windows/assetbundles",
     "sound": "Generic",
-    "home": "Generic",
-    "race": "Generic",
+}
+
+STORY_PATTERN = re.compile(r"story/data/\d+/\d+/storytimeline_\d+", re.IGNORECASE)
+HOME_PATTERN = re.compile(r"home/data/(\d+)/(\d+)/hometimeline_\1_\2_\d+", re.IGNORECASE)
+RACE_PATTERN = re.compile(r"race/storyrace/text/storyrace_\d+", re.IGNORECASE)
+
+TYPE_FILTERS = {
+    "story": lambda name: bool(STORY_PATTERN.search(name)),
+    "home": lambda name: bool(HOME_PATTERN.search(name)),
+    "race": lambda name: bool(RACE_PATTERN.search(name)),
+    "sound": lambda name: name.lower().startswith("sound/c"),
 }
 
 
@@ -102,6 +114,10 @@ def _prepare_task(row, raw_root):
     endpoint = f"{resource_type}/{prefix}/{hash_name}"
 
     normalized_name = original_name.replace("\\", "/")
+    type_filter = TYPE_FILTERS.get(asset_type_key)
+    if type_filter and not type_filter(normalized_name):
+        return None
+
     parts = [segment for segment in normalized_name.split("/") if segment]
     dest_path = os.path.join(raw_root, *parts)
 
