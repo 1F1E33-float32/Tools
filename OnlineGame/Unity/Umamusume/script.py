@@ -2,11 +2,12 @@ import argparse
 import json
 import os
 import re
-import sqlite3
 from collections.abc import Mapping, Sequence
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+import apsw
 import UnityPy
 from rich.progress import (
     BarColumn,
@@ -33,12 +34,51 @@ HOME_PATTERN = re.compile(r"home/data/(\d+)/(\d+)/hometimeline_\1_\2_\d+", re.IG
 RACE_PATTERN = re.compile(r"race/storyrace/text/storyrace_\d+", re.IGNORECASE)
 TARGET_FIELDS = ("VoiceSheetId", "CueId", "CharaId", "Name", "Text")
 
+DEFAULT_DATABASE_KEY = bytes(
+    [
+        0x9C,
+        0x2B,
+        0xAB,
+        0x97,
+        0xBC,
+        0xF8,
+        0xC0,
+        0xC4,
+        0xF1,
+        0xA9,
+        0xEA,
+        0x78,
+        0x81,
+        0xA2,
+        0x13,
+        0xF6,
+        0xC9,
+        0xEB,
+        0xF9,
+        0xD8,
+        0xD4,
+        0xC6,
+        0xA8,
+        0xE4,
+        0x3C,
+        0xE5,
+        0xA2,
+        0x59,
+        0xBD,
+        0xE7,
+        0xE9,
+        0xFD,
+    ]
+)
+DEFAULT_CIPHER_NAME = "chacha20"
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--RAW", dest="data_dir", default=r"/mnt/e/OnlineGame_Dataset/Umamusume/RAW")
     parser.add_argument("--EXP", dest="output_dir", default=r"/mnt/e/OnlineGame_Dataset/Umamusume/EXP")
-    parser.add_argument("--thread", type=int, default=os.cpu_count() or 1)
+    parser.add_argument("--thread", type=int, default=1 or 1)
+    parser.add_argument("--meta", dest="meta_path", default=r"/mnt/e/Games/JP/Umamusume/umamusume_Data/Persistent/meta")
     return parser.parse_args()
 
 
@@ -97,6 +137,14 @@ def ensure_parent_dir(path: str) -> None:
     parent = os.path.dirname(path)
     if parent:
         os.makedirs(parent, exist_ok=True)
+
+
+def _open_encrypted_meta(meta_path: Path) -> apsw.Connection:
+    connection = apsw.Connection(str(meta_path), flags=apsw.SQLITE_OPEN_READONLY)
+    connection.pragma("cipher", DEFAULT_CIPHER_NAME)
+    connection.pragma("hexkey", DEFAULT_DATABASE_KEY.hex())
+    connection.pragma("user_version")
+    return connection
 
 
 def get_mono_name(mono, tree: Dict) -> Optional[str]:
@@ -184,29 +232,32 @@ def extract_asset(data_dir: str, output_dir: str, source_name: str, kind: str) -
 
 def load_text_sources(meta_path: str) -> List[Tuple[str, str]]:
     text_sources: List[Tuple[str, str]] = []
-    with sqlite3.connect(meta_path) as conn:
-        cursor = conn.execute("SELECT n FROM a")
-        for (name,) in cursor:
+    connection = _open_encrypted_meta(Path(meta_path))
+    try:
+        cursor = connection.cursor()
+        for (name,) in cursor.execute("SELECT n FROM a"):
             if not name:
                 continue
             normalized = str(name).replace("\\", "/")
             kind = detect_kind(normalized)
             if kind:
                 text_sources.append((normalized, kind))
+    finally:
+        connection.close()
     return text_sources
 
 
 def main() -> None:
     args = parse_args()
 
-    meta_path = os.path.join(args.data_dir, "meta")
+    meta_path = args.meta_path or os.path.join(args.data_dir, "meta")
     if not os.path.exists(meta_path):
         print(f"[E] Meta database not found: {meta_path}")
         return
 
     try:
         text_sources = load_text_sources(meta_path)
-    except sqlite3.Error as exc:
+    except apsw.Error as exc:
         print(f"[E] Failed reading meta database: {exc}")
         return
 
@@ -220,10 +271,7 @@ def main() -> None:
         with Progress(*PROGRESS_COLUMNS, transient=True) as progress:
             task_id = progress.add_task("Extracting", total=len(text_sources))
             with ProcessPoolExecutor(max_workers=workers) as pool:
-                future_to_source = {
-                    pool.submit(extract_asset, args.data_dir, args.output_dir, source_name, kind): (source_name, kind)
-                    for source_name, kind in text_sources
-                }
+                future_to_source = {pool.submit(extract_asset, args.data_dir, args.output_dir, source_name, kind): (source_name, kind) for source_name, kind in text_sources}
 
                 for future in as_completed(future_to_source):
                     source_name, kind = future_to_source[future]
