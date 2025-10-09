@@ -16,7 +16,7 @@ from urllib3.util.retry import Retry
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--RAW", default=r"/mnt/e/OnlineGame_Dataset/Umamusume/RAW")
-    parser.add_argument("--meta", default=r"/mnt/e/OnlineGame_Dataset/Umamusume/RAW/meta")
+    parser.add_argument("--meta", default=r"/mnt/e/Games/JP/Umamusume/umamusume_Data/Persistent/meta")
     parser.add_argument("--thread", type=int, default=32)
     return parser.parse_args()
 
