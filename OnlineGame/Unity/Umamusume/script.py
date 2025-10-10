@@ -67,6 +67,12 @@ DECRYPTION_OFFSET = 256
 _KEY_CACHE: Dict[Tuple[bytes, int], np.ndarray] = {}
 
 
+def text_cleaning(text):
+    text = text.replace("」", "").replace("「", "").replace("』", "").replace("『", "").replace("（", "").replace("）", "")
+    text = text.replace("\r", "").replace("\n", "").replace("♪", "").replace("　", "")
+    return text
+
+
 def _normalize_asset_path(path: str) -> str:
     return os.path.normcase(os.path.normpath(path))
 
@@ -228,7 +234,14 @@ def extract_fields_from_tree(tree: Any) -> Optional[Dict[str, Any]]:
     if not text or not isinstance(text, str) or not text.strip():
         return None
 
-    return {field: collected[field] for field in REQUIRED_FIELDS}
+    voice = f"snd_voi_story_{voice_sheet_id}_{cue_id:02d}"
+
+    return {
+        "Voice": voice,
+        "CharaId": chara_id,
+        "Name": name,
+        "Text": text_cleaning(text),
+    }
 
 
 def get_asset_path(data_dir: str, name: str) -> str:
