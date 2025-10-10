@@ -239,7 +239,7 @@ def extract_fields_from_tree(tree: Any) -> Optional[Dict[str, Any]]:
     return {
         "Voice": voice,
         "CharaId": chara_id,
-        "Name": name,
+        "Speaker": name,
         "Text": text_cleaning(text),
     }
 
@@ -330,10 +330,19 @@ def main() -> None:
         if parent_dir:
             os.makedirs(parent_dir, exist_ok=True)
 
-        with open(args.index_path, "w", encoding="utf-8") as fp:
-            json.dump(all_records, fp, ensure_ascii=False, indent=2)
+        seen = set()
+        deduped_records = []
+        for rec in all_records:
+            voice = rec["Voice"]
+            if voice in seen:
+                continue
+            seen.add(voice)
+            deduped_records.append(rec)
 
-        print(f"[I] Extracted {len(all_records)} records to {args.index_path}")
+        with open(args.index_path, "w", encoding="utf-8") as fp:
+            json.dump(deduped_records, fp, ensure_ascii=False, indent=2)
+
+        print(f"[I] Extracted {len(deduped_records)} records to {args.index_path}")
 
     except KeyboardInterrupt:
         print("[W] Extraction interrupted by user request")
