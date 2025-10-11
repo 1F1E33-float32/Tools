@@ -8,6 +8,14 @@ MAGIC_MESS = b"@mess:__"
 SCR_LINE_MAX = 4096  # aligns with C header
 
 
+def parse_args(args=None, namespace=None):
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--input", default=r"D:\Fuck_VN\script")
+    parser.add_argument("--out-encoding", default="utf-8")
+    parser.add_argument("--db-scripts", default=r"D:\Fuck_VN\data\db_scripts.bin")
+    return parser.parse_args(args=args, namespace=namespace)
+
+
 class BinScript:
     def __init__(self, path: str, code: bytes, text_offsets: List[int], text_blob: bytes, code_size: int, text_count: int, text_size: int, mess_count: int):
         self.path = path
@@ -224,151 +232,9 @@ def load_proc_names(root: str) -> Dict[int, str]:
     return proc_map
 
 
-def _try_load_name_table(db_scripts_path: Optional[str]) -> Optional[List[str]]:
-    if not db_scripts_path:
-        return None
-    if not os.path.isfile(db_scripts_path):
-        return None
-    try:
-        # Try to import our companion parser
-        try:
-            from parse_mdb_bin import parse_mdb_bin  # type: ignore
-        except Exception:
-            parse_mdb_bin = None  # type: ignore
-
-        def _parse_local(path: str) -> List[Tuple[str, List[List[Any]]]]:  # name, rows
-            if parse_mdb_bin is not None:
-                sheets = parse_mdb_bin(path, enc="cp932")
-                return [(s.name, s.rows) for s in sheets]
-            # Minimal inline parser for fallback
-            with open(path, "rb") as f:
-                buf = f.read()
-
-            def ru32(o):
-                return struct.unpack_from("<I", buf, o)[0]
-
-            def cstr(pool: bytes, pos: int) -> str:
-                if pos >= len(pool):
-                    return ""
-                e = pool.find(b"\x00", pos)
-                e = len(pool) if e < 0 else e
-                return pool[pos:e].decode("cp932", errors="replace")
-
-            off = 0
-            if ru32(off) != 0x0062646D:
-                return []
-            off += 4
-            out = []
-            while True:
-                if off + 4 > len(buf):
-                    break
-                hsz = ru32(off)
-                off += 4
-                if hsz == 0:
-                    break
-                hdr = buf[off : off + hsz]
-                off += hsz
-                dsz = ru32(off)
-                off += 4
-                data = buf[off : off + dsz]
-                off += dsz
-                tsz = ru32(off)
-                off += 4
-                text = buf[off : off + tsz]
-                off += tsz
-                # header parse
-                ho = 0
-                name_off = struct.unpack_from("<I", hdr, ho)[0]
-                ho += 4
-                cols = struct.unpack_from("<I", hdr, ho)[0]
-                ho += 4
-                # read columns meta
-                col_sizes = []
-                col_names = []
-                col_types = []
-                for _ in range(cols):
-                    ctype = struct.unpack_from("<H", hdr, ho)[0]
-                    csize = struct.unpack_from("<H", hdr, ho + 2)[0]
-                    coff = struct.unpack_from("<I", hdr, ho + 4)[0]
-                    ho += 8
-                    col_types.append(ctype)
-                    col_sizes.append(csize)
-                    col_names.append(cstr(text, coff))
-                sheet_name = cstr(text, name_off)
-                stride = sum(col_sizes)
-                rows = []
-                if stride > 0 and dsz >= stride:
-                    rc = dsz // stride
-                    p = 0
-                    for _ in range(rc):
-                        row = []
-                        cp = 0
-                        for k in range(cols):
-                            field = data[p + cp : p + cp + col_sizes[k]]
-                            if col_types[k] == 4 and len(field) >= 4:
-                                off2 = struct.unpack_from("<I", field, 0)[0]
-                                row.append(cstr(text, off2))
-                            elif col_sizes[k] == 4 and col_types[k] == 2:
-                                row.append(struct.unpack_from("<f", field, 0)[0])
-                            elif col_sizes[k] == 4:
-                                row.append(struct.unpack_from("<i", field, 0)[0])
-                            elif col_sizes[k] == 2:
-                                row.append(struct.unpack_from("<h", field, 0)[0])
-                            elif col_sizes[k] == 1:
-                                row.append(struct.unpack_from("<b", field, 0)[0])
-                            else:
-                                row.append(field.hex())
-                            cp += col_sizes[k]
-                        rows.append(row)
-                        p += stride
-                out.append((sheet_name, rows))
-            return out
-
-        sheets = _parse_local(db_scripts_path)
-        name_rows: Optional[List[List[Any]]] = None
-        for nm, rows in sheets:
-            if nm and (nm == "登場人物" or "登場人物" in nm or nm.lower().startswith("name")):
-                name_rows = rows
-                break
-        if not name_rows:
-            return None
-        # First column is display name string
-        table = [(r[0] if len(r) > 0 and isinstance(r[0], str) else "") for r in name_rows]
-        return table
-    except Exception:
-        return None
-
-
-def _try_load_voc_table(db_scripts_path: Optional[str]) -> Optional[List[Tuple[str, str, int]]]:
-    if not db_scripts_path or not os.path.isfile(db_scripts_path):
-        return None
-    try:
-        from parse_mdb_bin import parse_mdb_bin  # type: ignore
-    except Exception:
-        parse_mdb_bin = None  # type: ignore
-
-    try:
-        if parse_mdb_bin is not None:
-            sheets = parse_mdb_bin(db_scripts_path, enc="cp932")
-            for s in sheets:
-                # '音声' sheet
-                if s.name and (s.name == "音声" or "音声" in s.name or s.name.lower().startswith("voice")):
-                    # Columns: 識別子(name), サブフォルダ(path), 音声グループ(group), サンプル音声(sample_id), サンプル音声数
-                    out: List[Tuple[str, str, int]] = []
-                    for row in s.rows:
-                        name = row[0] if len(row) > 0 and isinstance(row[0], str) else ""
-                        path = row[1] if len(row) > 1 and isinstance(row[1], str) else ""
-                        group = row[2] if len(row) > 2 and isinstance(row[2], int) else 0
-                        out.append((name, path, group))
-                    return out
-        else:
-            pass
-    except Exception:
-        return None
-    return None
-
-
 def disassemble(bin_script: BinScript, mess: Optional[MessFile], out_path: str, out_encoding: str = "utf-8", db_scripts_path: Optional[str] = None) -> None:
+    from mdb_parser import load_name_table, load_voice_table
+
     texts = bin_script.texts()
     proc_map = load_proc_names(os.getcwd())
     # Reverse map for quick lookup by name
@@ -389,10 +255,8 @@ def disassemble(bin_script: BinScript, mess: Optional[MessFile], out_path: str, 
     lines.append("")
     # Disassembly
     lines.append("CODE:")
-    name_table = _try_load_name_table(db_scripts_path)
-    # Optional tables for annotations
-    name_table = _try_load_name_table(db_scripts_path)
-    voc_table = _try_load_voc_table(db_scripts_path)
+    name_table = load_name_table(db_scripts_path)
+    voc_table = load_voice_table(db_scripts_path)
 
     # Keep instruction history to recover proc arguments
     history: List[Tuple[int, str, List[Any]]] = []  # (pc0, op_name, raw_params)
@@ -541,88 +405,62 @@ def dump_mess(mess: MessFile, out_path: str, out_encoding: str = "utf-8") -> Non
         f.write("\n".join(lines) + "\n")
 
 
-def process_path(path: str, out_dir: Optional[str], out_encoding: str, db_scripts_path: Optional[str] = None) -> List[str]:
+def process_path(path: str, out_encoding: str, db_scripts_path: Optional[str] = None) -> List[str]:
     made: List[str] = []
     base = os.path.basename(path)
-    root, ext = os.path.splitext(base)
+    _root, ext = os.path.splitext(base)
     parent = os.path.dirname(path)
-    target_dir = out_dir or parent
+    target_dir = parent
     os.makedirs(target_dir, exist_ok=True)
 
     ext_lower = ext.lower()
     if ext_lower == ".bin":
-        # Decompile code
         b = parse_bin(path)
         mess_path = find_peer_mess(path)
         mess = parse_mess(mess_path) if mess_path else None
         out_path = os.path.join(target_dir, base + ".txt")
         disassemble(b, mess, out_path, out_encoding=out_encoding, db_scripts_path=db_scripts_path)
         made.append(out_path)
-        # Also dump peer messages if any and not yet dumped
         if mess_path:
             mess_out = os.path.join(target_dir, os.path.basename(mess_path) + ".txt")
             if not os.path.exists(mess_out):
                 dump_mess(parse_mess(mess_path), mess_out, out_encoding=out_encoding)
                 made.append(mess_out)
     elif ext_lower == ".001":
-        # Dump messages only
         mess = parse_mess(path)
         out_path = os.path.join(target_dir, base + ".txt")
         dump_mess(mess, out_path, out_encoding=out_encoding)
         made.append(out_path)
     else:
-        # Try to detect by magic
         with open(path, "rb") as f:
             sig = f.read(8)
         if sig == MAGIC_CODE:
-            return process_path(path[: -len(ext)] + ".bin", out_dir, out_encoding, db_scripts_path)
+            return process_path(path[: -len(ext)] + ".bin", out_encoding, db_scripts_path)
         elif sig == MAGIC_MESS:
-            return process_path(path[: -len(ext)] + ".001", out_dir, out_encoding, db_scripts_path)
+            return process_path(path[: -len(ext)] + ".001", out_encoding, db_scripts_path)
         else:
             raise ValueError(f"Unsupported file type: {path}")
     return made
 
 
-def main():
-    ap = argparse.ArgumentParser(description="Decompile Femme Fatale @code:__/@mess:__ scripts to text (cp932 input).")
-    ap.add_argument("inputs", nargs="+", help="Input .bin/.001 files or directories")
-    ap.add_argument("-o", "--out-dir", default=None, help="Output directory (default: alongside inputs)")
-    ap.add_argument("--out-encoding", default="utf-8", help="Encoding for output .txt (default: utf-8)")
-    ap.add_argument("--db-scripts", default=None, help="Path to db_scripts.bin to resolve NAME -> character names")
-    ap.add_argument("--recurse", action="store_true", help="If an input is a directory, search recursively for .bin/.001")
-    args = ap.parse_args()
+if __name__ == "__main__":
+    args = parse_args()
 
-    outputs: List[str] = []
-    for inp in args.inputs:
-        if os.path.isdir(inp):
-            if args.recurse:
-                for root, _dirs, files in os.walk(inp):
-                    for fn in files:
-                        if fn.lower().endswith((".bin", ".001")):
-                            p = os.path.join(root, fn)
-                            try:
-                                outputs += process_path(p, args.out_dir, args.out_encoding, args.db_scripts)
-                            except Exception as e:
-                                print(f"[ERROR] {p}: {e}")
-            else:
-                for fn in os.listdir(inp):
-                    p = os.path.join(inp, fn)
-                    if os.path.isfile(p) and fn.lower().endswith((".bin", ".001")):
-                        try:
-                            outputs += process_path(p, args.out_dir, args.out_encoding, args.db_scripts)
-                        except Exception as e:
-                            print(f"[ERROR] {p}: {e}")
-        else:
-            try:
-                outputs += process_path(inp, args.out_dir, args.out_encoding, args.db_scripts)
-            except Exception as e:
-                print(f"[ERROR] {inp}: {e}")
+    outputs = []
+    inp = args.input
+    if os.path.isdir(inp):
+        for root, _dirs, files in os.walk(inp):
+            for fn in files:
+                if fn.lower().endswith((".bin", ".001")):
+                    p = os.path.join(root, fn)
+                    try:
+                        outputs += process_path(p, args.out_encoding, args.db_scripts)
+                    except Exception as e:
+                        print(f"[ERROR] {p}: {e}")
+    else:
+        print(f"[ERROR] {inp}: not a directory (only a single directory is allowed)")
 
     if outputs:
         print("Written:")
         for p in outputs:
             print("  ", p)
-
-
-if __name__ == "__main__":
-    main()

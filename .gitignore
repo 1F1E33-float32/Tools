@@ -10,10 +10,13 @@ uv.lock
 node_modules/
 hook.js
 
-#
+# Claude Code
+.claude
+
+# Reqable
 *.har
 
-# 
+# Author Request
 TextCleaner_Softpal.py
 
 build
