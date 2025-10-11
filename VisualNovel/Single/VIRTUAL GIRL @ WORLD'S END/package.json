@@ -1,5 +1,0 @@
-{
-  "dependencies": {
-    "frida-il2cpp-bridge": "^0.12.0"
-  }
-}
