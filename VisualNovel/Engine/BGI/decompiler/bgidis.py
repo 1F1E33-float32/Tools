@@ -1,4 +1,5 @@
 import argparse
+import json
 import os
 import struct
 
@@ -8,7 +9,7 @@ import bgiop
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--in_dir", default=r"E:\VN\_tmp\2025_09\Kao no nai Tsuki -Matsuyoi no Soutsubaki-\script")
+    parser.add_argument("--in_dir", default=r"E:\VN\ja\AUGUST\Daitoshokan no Hitsujikai\script")
     return parser.parse_args()
 
 
@@ -77,7 +78,59 @@ def parse(code, hdr):
     return inst, offsets, hdrtext, defines
 
 
-def out(fo, inst, offsets, hdrtext, defines):
+def parse_instruction(inst_str):
+    import re
+
+    # Match function_name(args)
+    match = re.match(r"([A-Za-z_][A-Za-z0-9_:]*)\((.*)\)", inst_str)
+    if match:
+        name = match.group(1)
+        args_str = match.group(2)
+        if args_str:
+            # Parse arguments - handle strings, numbers, labels
+            args = []
+            # Simple argument parsing - split by comma outside quotes
+            in_quotes = False
+            current_arg = ""
+            for char in args_str:
+                if char == '"' and (not current_arg or current_arg[-1] != "\\"):
+                    in_quotes = not in_quotes
+                    current_arg += char
+                elif char == "," and not in_quotes:
+                    args.append(current_arg.strip())
+                    current_arg = ""
+                else:
+                    current_arg += char
+            if current_arg:
+                args.append(current_arg.strip())
+
+            # Convert arguments to appropriate types
+            parsed_args = []
+            for arg in args:
+                if arg.startswith('"') and arg.endswith('"'):
+                    # String argument - keep as is (remove quotes)
+                    parsed_args.append(arg[1:-1])
+                elif arg.startswith("L") or (arg and arg[0].isupper()):
+                    # Label reference
+                    parsed_args.append(arg)
+                elif arg.startswith("0x"):
+                    # Hex number
+                    parsed_args.append(int(arg, 16))
+                elif arg.lstrip("-").isdigit():
+                    # Decimal number
+                    parsed_args.append(int(arg))
+                else:
+                    # Keep as string
+                    parsed_args.append(arg)
+            return name, parsed_args
+        else:
+            return name, []
+    else:
+        # No parentheses - just the instruction name
+        return inst_str, []
+
+
+def render_txt(fo, inst, offsets, hdrtext, defines):
     if hdrtext:
         fo.write('#header "%s"\n\n' % asdis.escape(hdrtext))
     if defines:
@@ -95,8 +148,57 @@ def out(fo, inst, offsets, hdrtext, defines):
         fo.write("\t%s;\n" % inst[addr])
 
 
+def render_json(fo, inst, offsets, hdrtext, defines):
+    # Build instruction list
+    instructions = []
+    for addr in sorted(inst):
+        inst_name, inst_args = parse_instruction(inst[addr])
+        entry = {
+            "address": addr,
+            "instruction": inst_name,
+            "args": inst_args,
+        }
+        instructions.append(entry)
+
+    # Build labels dictionary: label_name -> [instructions]
+    # Labels include both named labels (from defines) and offset labels (from offsets)
+    labels = {}
+    current_label = None
+    label_instructions = []
+
+    for entry in instructions:
+        addr = entry["address"]
+
+        # Check if this address has a label (either named or offset)
+        is_label = addr in offsets or addr in defines
+
+        if is_label:
+            # Save previous label if exists
+            if current_label is not None:
+                labels[current_label] = label_instructions
+
+            # Determine label name
+            if addr in defines:
+                current_label = defines[addr]
+            else:
+                current_label = "L%05x" % addr
+
+            # Start new label with this instruction
+            label_instructions = [entry]
+        else:
+            # Add to current label's instructions
+            if current_label is not None:
+                label_instructions.append(entry)
+
+    # Save last label
+    if current_label is not None:
+        labels[current_label] = label_instructions
+
+    output = {"header": hdrtext, "defines": [{"name": defines[offset], "offset": offset} for offset in sorted(defines)], "labels": labels}
+    json.dump(output, fo, ensure_ascii=False, indent=4)
+
+
 def dis(file):
-    ofile = os.path.splitext(file)[0] + ".txt"
     fi = open(file, "rb")
     hdr_test = fi.read(0x20)
     if hdr_test.startswith(b"BurikoCompiledScriptVer1.00\x00"):
@@ -107,10 +209,19 @@ def dis(file):
     hdr = fi.read(hdrsize)
     code = fi.read()
     fi.close()
+
+    # Parse to IR
     inst, offsets, hdrtext, defines = parse(code, hdr)
-    fo = open(ofile, "w", encoding="utf-8")
-    out(fo, inst, offsets, hdrtext, defines)
-    fo.close()
+
+    # Render to txt format
+    txt_file = os.path.splitext(file)[0] + ".txt"
+    with open(txt_file, "w", encoding="utf-8") as fo:
+        render_txt(fo, inst, offsets, hdrtext, defines)
+
+    # Render to json format
+    json_file = os.path.splitext(file)[0] + ".json"
+    with open(json_file, "w", encoding="utf-8") as fo:
+        render_json(fo, inst, offsets, hdrtext, defines)
 
 
 if __name__ == "__main__":

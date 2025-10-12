@@ -12,6 +12,7 @@ hook.js
 
 # Claude Code
 .claude
+CLAUDE.md
 
 # Reqable
 *.har
