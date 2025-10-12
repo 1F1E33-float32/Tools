@@ -351,8 +351,7 @@ def decompile_to_ir(bin_script: BinScript, mess: Optional[MessFile], root: str, 
                                     idx = a % VOC_MASK
                                     if 0 <= chr_idx < len(voc_table) and idx > 0:
                                         name_pref, subfolder, _ = voc_table[chr_idx]
-                                        base_dir = "voc"
-                                        path = f"{base_dir}\\{subfolder}\\{name_pref}{idx:04d}.ogg" if subfolder else f"{base_dir}\\{name_pref}{idx:04d}.ogg"
+                                        path = f"{subfolder}\\{name_pref}{idx:04d}.ogg"
                                         voc_paths.append(path)
                                     else:
                                         raise ValueError(f"Invalid voice table entry: chr_idx={chr_idx}, idx={idx}")

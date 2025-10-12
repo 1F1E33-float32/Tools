@@ -162,8 +162,3 @@ if __name__ == "__main__":
                         print(f"[ERROR] {p}: {e}")
     else:
         print(f"[ERROR] {script_dir}: not a directory")
-
-    if outputs:
-        print("Written:")
-        for p in outputs:
-            print("  ", p)
