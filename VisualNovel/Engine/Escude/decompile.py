@@ -1,19 +1,10 @@
-import argparse
 import os
 import struct
 from typing import Any, Dict, List, Optional, Tuple
 
 MAGIC_CODE = b"@code:__"
 MAGIC_MESS = b"@mess:__"
-SCR_LINE_MAX = 4096  # aligns with C header
-
-
-def parse_args(args=None, namespace=None):
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--input", default=r"D:\Fuck_VN\script")
-    parser.add_argument("--out-encoding", default="utf-8")
-    parser.add_argument("--db-scripts", default=r"D:\Fuck_VN\data\db_scripts.bin")
-    return parser.parse_args(args=args, namespace=namespace)
+SCR_LINE_MAX = 4096
 
 
 class BinScript:
@@ -35,10 +26,8 @@ class BinScript:
             if off < 0 or off >= n:
                 res.append("")
                 continue
-            # Prefer C-string style (NUL-terminated), fall back to next offset/text_size
             end = blob.find(b"\x00", off)
             if end == -1:
-                # If no NUL, cut to next offset or blob end
                 if i + 1 < len(self.text_offsets):
                     end = self.text_offsets[i + 1]
                 else:
@@ -56,8 +45,6 @@ class MessFile:
         self.entries = entries
 
 
-# Opcode mapping (code -> (name, param_count, param_kinds))
-# param_kinds: tuple of tokens among: 'i' (int32), 'f' (float32 bits), 'text' (index to text table), 'mess' (index into .001), 'pc' (code offset), 'proc' (proc id)
 OPCODES: Dict[int, Tuple[str, Tuple[str, ...]]] = {
     1: ("POP", ()),
     2: ("POP_N", ("i",)),
@@ -98,14 +85,56 @@ OPCODES: Dict[int, Tuple[str, Tuple[str, ...]]] = {
     37: ("DIV", ()),
     38: ("MOD", ()),
     39: ("NEG", ()),
-    # NAME takes an index into name_dat (db_scripts.bin "登場人物" sheet), not the local text table
     40: ("NAME", ("name",)),
     41: ("TEXT", ("mess",)),
     42: ("PAGE", ()),
-    43: ("OPTION", ("text", "pc")),  # also pops one value from stack at runtime
+    43: ("OPTION", ("text", "pc")),
     44: ("PROC", ("proc",)),
     45: ("LINE", ("i",)),
 }
+
+
+class Instruction:
+    def __init__(self, pc: int, opcode: int, op_name: str, params: List[Any], param_kinds: Tuple[str, ...], param_comments: List[Optional[Any]], extra_comment: Optional[List[str]]):
+        self.pc = pc
+        self.opcode = opcode
+        self.op_name = op_name
+        self.params = params
+        self.param_kinds = param_kinds
+        self.param_comments = param_comments
+        self.extra_comment = extra_comment
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "pc": self.pc,
+            "opcode": self.opcode,
+            "op_name": self.op_name,
+            "params": self.params,
+            "param_kinds": list(self.param_kinds),
+            "param_comments": self.param_comments,
+            "extra_comment": self.extra_comment
+        }
+
+
+class ScriptIR:
+    def __init__(self, bin_script: BinScript, mess: Optional[MessFile], instructions: List[Instruction]):
+        self.bin_script = bin_script
+        self.mess = mess
+        self.instructions = instructions
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "file": os.path.basename(self.bin_script.path),
+            "header": {
+                "code_size": self.bin_script.code_size,
+                "text_count": self.bin_script.text_count,
+                "text_size": self.bin_script.text_size,
+                "mess_count": self.bin_script.mess_count
+            },
+            "texts": self.bin_script.texts(),
+            "mess_entries": self.mess.entries if self.mess else [],
+            "instructions": [inst.to_dict() for inst in self.instructions]
+        }
 
 
 def read_u32_le(b: bytes, off: int) -> Tuple[int, int]:
@@ -134,7 +163,6 @@ def parse_bin(path: str) -> BinScript:
         raise ValueError(f"{path}: code_size exceeds file")
     code = data[off : off + code_size]
     off += code_size
-    # text offsets
     text_offsets: List[int] = []
     for _ in range(text_count):
         if off + 4 > len(data):
@@ -150,23 +178,19 @@ def parse_bin(path: str) -> BinScript:
 def parse_mess(path: str, encoding: str = "cp932") -> MessFile:
     with open(path, "rb") as f:
         data = f.read()
-    # Scrambled variant has header @mess:__
     if len(data) >= 8 and data[:8] == MAGIC_MESS:
         off = 8
         if off + 8 > len(data):
             raise ValueError(f"{path}: truncated after @mess:__ header")
         count, off = read_u32_le(data, off)
         size, off = read_u32_le(data, off)
-        # Offsets
         offsets: List[int] = []
         for _ in range(count):
             val, off = read_u32_le(data, off)
             offsets.append(val)
         blob = bytearray(data[off : off + size])
-        # Unscramble
         for i in range(len(blob)):
             blob[i] ^= 0x55
-        # Extract C-strings using offsets
         entries: List[str] = []
         for i, start in enumerate(offsets):
             if start >= len(blob):
@@ -174,7 +198,6 @@ def parse_mess(path: str, encoding: str = "cp932") -> MessFile:
                 continue
             end = blob.find(b"\x00", start)
             if end == -1:
-                # fallback to next offset or end
                 end = offsets[i + 1] if (i + 1) < len(offsets) else len(blob)
             try:
                 entries.append(bytes(blob[start:end]).decode(encoding))
@@ -182,12 +205,10 @@ def parse_mess(path: str, encoding: str = "cp932") -> MessFile:
                 entries.append(bytes(blob[start:end]).decode(encoding, errors="replace"))
         return MessFile(path, entries)
     else:
-        # Plain text file: split lines on CR/LF
         try:
             txt = data.decode(encoding)
         except UnicodeDecodeError:
             txt = data.decode(encoding, errors="replace")
-        # Normalize CRLF/CR/LF to LF then split
         txt = txt.replace("\r\n", "\n").replace("\r", "\n")
         entries = txt.split("\n")
         return MessFile(path, entries)
@@ -198,7 +219,6 @@ def find_peer_mess(bin_path: str) -> Optional[str]:
     cand = base + ".001"
     if os.path.isfile(cand):
         return cand
-    # Also try uppercase/lowercase variants (Windows usually insensitive, but for portability)
     for ext in (".001", ".Mess", ".MESS"):
         cand = base + ext
         if os.path.isfile(cand):
@@ -207,260 +227,165 @@ def find_peer_mess(bin_path: str) -> Optional[str]:
 
 
 def load_proc_names(root: str) -> Dict[int, str]:
-    proc_map: Dict[int, str] = {}
-    adv_c = os.path.join(root, "adv", "adv.c")
-    if not os.path.isfile(adv_c):
-        return proc_map
-    try:
-        with open(adv_c, "r", encoding="utf-8", errors="ignore") as f:
-            lines = f.readlines()
-        idx = 0
-        for line in lines:
-            line = line.strip()
-            if line.startswith("set_proc("):
-                # set_proc(proc_name);
-                inside = line[len("set_proc(") :]
-                inside = inside.split(")")[0]
-                name = inside.strip()
-                # Remove trailing comments if any
-                name = name.split("//")[0].strip()
-                if name:
-                    proc_map[idx] = name
-                    idx += 1
-    except Exception:
-        return {}
+    proc_map = {}
+    adv_c = os.path.join(root, "exe", "adv", "adv.c")
+    with open(adv_c, "r", encoding="utf-8", errors="ignore") as f:
+        lines = f.readlines()
+    idx = 0
+    for line in lines:
+        line = line.strip()
+        if line.startswith("set_proc("):
+            inside = line[len("set_proc(") :]
+            inside = inside.split(")")[0]
+            name = inside.strip()
+            name = name.split("//")[0].strip()
+            if name:
+                proc_map[idx] = name
+                idx += 1
     return proc_map
 
 
-def disassemble(bin_script: BinScript, mess: Optional[MessFile], out_path: str, out_encoding: str = "utf-8", db_scripts_path: Optional[str] = None) -> None:
-    from mdb_parser import load_name_table, load_voice_table
-
+def decompile_to_ir(bin_script: BinScript, mess: Optional[MessFile], root: str, name_table: List[str], voc_table: List[Tuple[str, str, str]]) -> ScriptIR:
     texts = bin_script.texts()
-    proc_map = load_proc_names(os.getcwd())
-    # Reverse map for quick lookup by name
-    proc_rev: Dict[str, int] = {v: k for k, v in proc_map.items()}
+    proc_map = load_proc_names(root)
     code = bin_script.code
     pc = 0
-    lines: List[str] = []
-    # Header
-    lines.append(f"FILE: {os.path.basename(bin_script.path)}")
-    lines.append(f"HEADER: code_size={bin_script.code_size} text_count={bin_script.text_count} text_size={bin_script.text_size} mess_count={bin_script.mess_count}")
-    lines.append("")
-    # Dump text table
-    lines.append("TEXT_TABLE:")
-    for i, s in enumerate(texts):
-        # Escape newlines/tabs in display
-        disp = s.replace("\t", "\\t").replace("\r", "\\r").replace("\n", "\\n")
-        lines.append(f"  [{i}] {disp}")
-    lines.append("")
-    # Disassembly
-    lines.append("CODE:")
-    name_table = load_name_table(db_scripts_path)
-    voc_table = load_voice_table(db_scripts_path)
-
-    # Keep instruction history to recover proc arguments
-    history: List[Tuple[int, str, List[Any]]] = []  # (pc0, op_name, raw_params)
+    instructions: List[Instruction] = []
+    history = []
 
     while pc < len(code):
         op = code[pc]
         op_name, kinds = OPCODES.get(op, (f"OP_{op}", ()))
         pc0 = pc
         pc += 1
-        params: List[str] = []
-        comments: List[str] = []
-        raw_params: List[Any] = []
+        params: List[Any] = []
+
         for kind in kinds:
             if pc + 4 > len(code):
-                params.append("<trunc>")
+                params.append(None)
                 break
             raw_i = struct.unpack_from("<i", code, pc)[0]
             raw_u = raw_i & 0xFFFFFFFF
             pc += 4
+
             if kind == "i":
-                params.append(str(raw_i))
-                raw_params.append(raw_i)
+                params.append(raw_i)
             elif kind == "f":
                 val = read_f32_from_i32(raw_u)
-                params.append(format(val, ".9g"))
-                comments.append(f"bits=0x{raw_u:08X}")
-                raw_params.append(val)
-            elif kind == "text":
-                idx = raw_u
-                params.append(str(idx))
-                if 0 <= idx < len(texts):
-                    t = texts[idx].replace("\t", "\\t").replace("\r", "\\r").replace("\n", "\\n")
-                    comments.append(f"text='{t}'")
-                else:
-                    comments.append("text=<out_of_range>")
-                raw_params.append(idx)
-            elif kind == "name":
-                idx = raw_u
-                params.append(str(idx))
-                if name_table and 0 <= idx < len(name_table):
-                    nm = name_table[idx].replace("\t", "\\t").replace("\r", "\\r").replace("\n", "\\n")
-                    if nm:
-                        comments.append(f"name='{nm}'")
-                    else:
-                        comments.append("name=<none>")
-                raw_params.append(idx)
-            elif kind == "mess":
-                # Local index per file; map via .001 if present
-                idx = raw_u
-                params.append(str(idx))
-                if mess and 0 <= idx < len(mess.entries):
-                    m = mess.entries[idx].replace("\t", "\\t").replace("\r", "\\r").replace("\n", "\\n")
-                    comments.append(f"mess='{m}'")
-                elif mess:
-                    comments.append("mess=<out_of_range>")
-                raw_params.append(idx)
-            elif kind == "pc":
-                params.append(str(raw_u))
-                raw_params.append(raw_u)
-            elif kind == "proc":
-                name = proc_map.get(raw_u)
-                if name:
-                    params.append(f"{raw_u} ({name})")
-                else:
-                    params.append(str(raw_u))
-                raw_params.append(raw_u)
+                params.append(val)
+            elif kind in ("text", "mess", "name", "pc", "proc"):
+                params.append(raw_u)
             else:
-                params.append(str(raw_u))
-                raw_params.append(raw_u)
+                params.append(raw_u)
 
-        # Append to history for potential backward analysis
-        history.append((pc0, op_name, raw_params))
+        param_comments = []
+        for i, kind in enumerate(kinds):
+            if i >= len(params):
+                param_comments.append(None)
+                continue
 
-        # Extra annotation: decode PROC 26 (proc_cv) argument list into voice file names
+            raw_val = params[i]
+            if raw_val is None:
+                param_comments.append(None)
+                continue
+
+            if kind == "f":
+                bits = struct.unpack("<I", struct.pack("<f", raw_val))[0]
+                param_comments.append(f"0x{bits:08X}")
+            elif kind == "text":
+                idx = raw_val
+                if 0 <= idx < len(texts):
+                    param_comments.append(texts[idx])
+                else:
+                    param_comments.append("<out_of_range>")
+            elif kind == "name":
+                idx = raw_val
+                if name_table and 0 <= idx < len(name_table):
+                    nm = name_table[idx]
+                    param_comments.append(nm if nm else "<none>")
+                else:
+                    param_comments.append(None)
+            elif kind == "mess":
+                idx = raw_val
+                if mess and 0 <= idx < len(mess.entries):
+                    param_comments.append(mess.entries[idx])
+                elif mess:
+                    param_comments.append("<out_of_range>")
+                else:
+                    param_comments.append(None)
+            elif kind == "proc":
+                name = proc_map.get(raw_val)
+                param_comments.append(name)
+            else:
+                param_comments.append(None)
+
+        history.append((pc0, op_name, params))
+
+        extra_comment = None
         if op_name == "PROC":
-            # Determine if this is proc_cv
-            proc_id = int(raw_params[0]) if raw_params else None
-            is_cv = False
-            proc_name = proc_map.get(proc_id) if (proc_id is not None) else None
+            proc_id = int(params[0]) if params else None
+            proc_name = proc_map.get(proc_id)
             if proc_name == "proc_cv":
-                is_cv = True
-            elif proc_rev.get("proc_cv", None) == proc_id:
-                is_cv = True
-            # Try also by common index 26 if no map
-            if not is_cv and proc_id == 26 and ("proc_cv" in proc_map.values() or True):
-                is_cv = True
-            if is_cv:
-                # Look back: last instruction should be PUSH_INT <count>
-                # Collect up to 'count' preceding PUSH_* as args
                 if len(history) >= 2:
                     count_instr = history[-2]
                     if count_instr[1] == "PUSH_INT" and count_instr[2]:
                         arg_count = int(count_instr[2][0])
                         args: List[int] = []
-                        # Walk back to fetch preceding arg_count PUSH_* values
                         idx_hist = len(history) - 3
                         while idx_hist >= 0 and len(args) < arg_count:
-                            hpc, hop, hparams = history[idx_hist]
+                            _, hop, hparams = history[idx_hist]
                             if hop == "PUSH_INT" and hparams:
                                 args.append(int(hparams[0]))
                             elif hop in ("PUSH_TEXT", "PUSH_MESS", "PUSH_FLOAT", "PUSH_GVAR", "PUSH_LVAR", "PUSH_RET"):
-                                # We could try to resolve non-int to int, but keep it simple
-                                args.append(None)  # type: ignore
+                                args.append(None)
                             else:
                                 break
                             idx_hist -= 1
                         if args:
                             args = list(reversed(args))
-                            # Build voice file annotations
                             VOC_MASK = 65536
-                            voc_comments: List[str] = []
+                            voc_paths: List[str] = []
                             for a in args:
                                 if isinstance(a, int) and a > 0:
                                     chr_idx = a // VOC_MASK
                                     idx = a % VOC_MASK
-                                    if voc_table and 0 <= chr_idx < len(voc_table) and idx > 0:
-                                        name_pref, subfolder, _group = voc_table[chr_idx]
-                                        # Build path like voc\subfolder\name0001.ogg
+                                    if 0 <= chr_idx < len(voc_table) and idx > 0:
+                                        name_pref, subfolder, _ = voc_table[chr_idx]
                                         base_dir = "voc"
                                         path = f"{base_dir}\\{subfolder}\\{name_pref}{idx:04d}.ogg" if subfolder else f"{base_dir}\\{name_pref}{idx:04d}.ogg"
-                                        voc_comments.append(path)
+                                        voc_paths.append(path)
                                     else:
-                                        voc_comments.append(f"id={a} (chr={chr_idx}, idx={idx})")
+                                        raise ValueError(f"Invalid voice table entry: chr_idx={chr_idx}, idx={idx}")
                                 else:
-                                    voc_comments.append("(arg)" if a is None else str(a))
-                            if voc_comments:
-                                comments.append("voices=" + ", ".join(voc_comments))
+                                    raise ValueError(f"Invalid voice argument: {a}")
+                            extra_comment = voc_paths
 
-        if comments:
-            lines.append(f"  {pc0:06d}: {op_name} " + ", ".join(params) + "    ; " + "; ".join(comments))
-        else:
-            lines.append(f"  {pc0:06d}: {op_name} " + ", ".join(params))
-    # Write out
-    with open(out_path, "w", encoding=out_encoding, newline="\n") as f:
-        f.write("\n".join(lines) + "\n")
+        inst = Instruction(pc0, op, op_name, params, kinds, param_comments, extra_comment)
+        instructions.append(inst)
+
+    return ScriptIR(bin_script, mess, instructions)
 
 
-def dump_mess(mess: MessFile, out_path: str, out_encoding: str = "utf-8") -> None:
-    lines = []
-    lines.append(f"FILE: {os.path.basename(mess.path)}")
-    lines.append("MESSAGES:")
-    for i, s in enumerate(mess.entries):
-        disp = s.replace("\t", "\\t").replace("\r", "\\r").replace("\n", "\\n")
-        lines.append(f"  [{i}] {disp}")
-    with open(out_path, "w", encoding=out_encoding, newline="\n") as f:
-        f.write("\n".join(lines) + "\n")
-
-
-def process_path(path: str, out_encoding: str, db_scripts_path: Optional[str] = None) -> List[str]:
-    made: List[str] = []
+def process_file(path: str, root: str, name_table: List[str], voc_table: List[Tuple[str, str, str]]) -> ScriptIR:
     base = os.path.basename(path)
-    _root, ext = os.path.splitext(base)
-    parent = os.path.dirname(path)
-    target_dir = parent
-    os.makedirs(target_dir, exist_ok=True)
+    _, ext = os.path.splitext(base)
 
     ext_lower = ext.lower()
     if ext_lower == ".bin":
-        b = parse_bin(path)
+        bin_script = parse_bin(path)
         mess_path = find_peer_mess(path)
         mess = parse_mess(mess_path) if mess_path else None
-        out_path = os.path.join(target_dir, base + ".txt")
-        disassemble(b, mess, out_path, out_encoding=out_encoding, db_scripts_path=db_scripts_path)
-        made.append(out_path)
-        if mess_path:
-            mess_out = os.path.join(target_dir, os.path.basename(mess_path) + ".txt")
-            if not os.path.exists(mess_out):
-                dump_mess(parse_mess(mess_path), mess_out, out_encoding=out_encoding)
-                made.append(mess_out)
+        return decompile_to_ir(bin_script, mess, root, name_table, voc_table)
     elif ext_lower == ".001":
         mess = parse_mess(path)
-        out_path = os.path.join(target_dir, base + ".txt")
-        dump_mess(mess, out_path, out_encoding=out_encoding)
-        made.append(out_path)
+        empty_bin = BinScript(path, b"", [], b"", 0, 0, 0, len(mess.entries))
+        return ScriptIR(empty_bin, mess, [])
     else:
         with open(path, "rb") as f:
             sig = f.read(8)
         if sig == MAGIC_CODE:
-            return process_path(path[: -len(ext)] + ".bin", out_encoding, db_scripts_path)
+            return process_file(path[: -len(ext)] + ".bin", root, name_table, voc_table)
         elif sig == MAGIC_MESS:
-            return process_path(path[: -len(ext)] + ".001", out_encoding, db_scripts_path)
+            return process_file(path[: -len(ext)] + ".001", root, name_table, voc_table)
         else:
             raise ValueError(f"Unsupported file type: {path}")
-    return made
-
-
-if __name__ == "__main__":
-    args = parse_args()
-
-    outputs = []
-    inp = args.input
-    if os.path.isdir(inp):
-        for root, _dirs, files in os.walk(inp):
-            for fn in files:
-                if fn.lower().endswith((".bin", ".001")):
-                    p = os.path.join(root, fn)
-                    try:
-                        outputs += process_path(p, args.out_encoding, args.db_scripts)
-                    except Exception as e:
-                        print(f"[ERROR] {p}: {e}")
-    else:
-        print(f"[ERROR] {inp}: not a directory (only a single directory is allowed)")
-
-    if outputs:
-        print("Written:")
-        for p in outputs:
-            print("  ", p)

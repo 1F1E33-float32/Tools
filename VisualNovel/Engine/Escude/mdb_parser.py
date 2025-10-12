@@ -7,7 +7,7 @@ from typing import Any, List, Optional, Tuple
 MAGIC = 0x0062646D  # little-endian: b"mdb\x00"
 
 
-def parse_mdb_bin(path: str, enc: str = "cp932") -> List[Tuple[str, List[List[Any]]]]:
+def parse_mdb_bin(path: str, enc: str = "cp932"):
     """
     Parse a MDB binary file.
 
@@ -56,7 +56,7 @@ def parse_mdb_bin(path: str, enc: str = "cp932") -> List[Tuple[str, List[List[An
         return []
     off += 4
 
-    out: List[Tuple[str, List[List[Any]]]] = []
+    out = []
 
     while True:
         if off + 4 > len(buf):
@@ -143,23 +143,7 @@ def parse_mdb_bin(path: str, enc: str = "cp932") -> List[Tuple[str, List[List[An
     return out
 
 
-def load_name_table(db_scripts_path: Optional[str]) -> Optional[List[str]]:
-    """
-    Load character name table from db_scripts.bin.
-
-    Searches for the '登場人物' (characters) sheet and returns the first column
-    (display names) as a list.
-
-    Parameters
-    ----------
-    db_scripts_path : Optional[str]
-        Path to db_scripts.bin file
-
-    Returns
-    -------
-    Optional[List[str]]
-        List of character names, or None if not found
-    """
+def load_name_table(db_scripts_path):
     if not db_scripts_path or not os.path.isfile(db_scripts_path):
         return None
 
@@ -179,22 +163,7 @@ def load_name_table(db_scripts_path: Optional[str]) -> Optional[List[str]]:
     return table
 
 
-def load_voice_table(db_scripts_path: Optional[str]) -> Optional[List[Tuple[str, str, int]]]:
-    """
-    Load voice table from db_scripts.bin.
-
-    Searches for the '音声' (voice) sheet and returns voice metadata.
-
-    Parameters
-    ----------
-    db_scripts_path : Optional[str]
-        Path to db_scripts.bin file
-
-    Returns
-    -------
-    Optional[List[Tuple[str, str, int]]]
-        List of (name_prefix, subfolder, group) tuples, or None if not found
-    """
+def load_voice_table(db_scripts_path):
     if not db_scripts_path or not os.path.isfile(db_scripts_path):
         return None
 
