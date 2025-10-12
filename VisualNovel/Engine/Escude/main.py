@@ -156,9 +156,4 @@ if __name__ == "__main__":
             for fn in files:
                 if fn.lower().endswith((".bin", ".001")):
                     p = os.path.join(root, fn)
-                    try:
-                        outputs += process_path(p, args.out_encoding, inp, name_table, voc_table)
-                    except Exception as e:
-                        print(f"[ERROR] {p}: {e}")
-    else:
-        print(f"[ERROR] {script_dir}: not a directory")
+                    process_path(p, args.out_encoding, inp, name_table, voc_table)

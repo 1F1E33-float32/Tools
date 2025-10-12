@@ -46,8 +46,8 @@ def extract_dialogue(json_path):
                 state = "waiting_name"
 
         elif op_name == "PROC":
-            params = inst.get("params", [])
-            if params and params[0] == 26:
+            param_comments = inst.get("param_comments", [])
+            if param_comments and param_comments[0] == "proc_cv":
                 extra_comment = inst.get("extra_comment")
                 if extra_comment and len(extra_comment) > 0:
                     if state == "waiting_proc":

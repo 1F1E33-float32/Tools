@@ -10,7 +10,7 @@ def parse_args(args=None, namespace=None):
     p = argparse.ArgumentParser()
     p.add_argument("--audio_dir", default=r"D:\Fuck_VN\voice")
     p.add_argument("--index_json", default=r"D:\Fuck_VN\index.json")
-    p.add_argument("--out_dir", default=r"E:\VN_Dataset\TMP_DATA\Escude_Yuukoku no Femme Fatale")
+    p.add_argument("--out_dir", default=r"E:\VN_Dataset\TMP_DATA\Escude_Sennagi - Kegareta Chigiri to Kami Koromo -")
     return p.parse_args(args=args, namespace=namespace)
 
 
