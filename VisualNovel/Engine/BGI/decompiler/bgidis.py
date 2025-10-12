@@ -9,7 +9,7 @@ import bgiop
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--in_dir", default=r"E:\VN\ja\AUGUST\Daitoshokan no Hitsujikai\script")
+    parser.add_argument("--in_dir", default=r"D:\Fuck_VN\script")
     return parser.parse_args()
 
 

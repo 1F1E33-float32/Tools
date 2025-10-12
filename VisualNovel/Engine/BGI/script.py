@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 def parse_args(args=None, namespace=None):
     parser = argparse.ArgumentParser()
-    parser.add_argument("-JA", type=str, default=r"E:\VN\_tmp\2025_09\Kao no nai Tsuki -Matsuyoi no Soutsubaki-\script")
+    parser.add_argument("-JA", type=str, default=r"D:\Fuck_VN\script")
     parser.add_argument("-op", type=str, default=r"D:\Fuck_VN\index.json")
     parser.add_argument("-ft", type=int, default=1)
     return parser.parse_args(args=args, namespace=namespace)
@@ -15,6 +15,7 @@ def parse_args(args=None, namespace=None):
 
 def text_cleaning(text):
     text = text.replace("」", "").replace("「", "").replace("（", "").replace("）", "").replace("『", "").replace("』", "")
+    text = text.replace("　", "")
     return text
 
 
@@ -96,22 +97,30 @@ def process_type1(data, results):
         while i < len(instructions):
             inst = instructions[i]
 
-            if inst["instruction"].startswith("snd_::"):
+            if inst["instruction"].startswith("snd_::f_1a4"):
                 voice = None
-                for j in range(i - 1, max(0, i - 10), -1):
-                    if instructions[j]["instruction"] == "push_string":
-                        voice = instructions[j]["args"][0]
-                        break
+                if instructions[i - 1]["instruction"] == "nargs":
+                    # If nargs exists, voice is at position: i - nargs_value - 1
+                    nargs_value = instructions[i - 1]["args"][0]
+                    voice_index = i - nargs_value
+                    if instructions[voice_index]["instruction"] == "push_string":
+                        voice = instructions[voice_index]["args"][0]
+                else:
+                    # No nargs, voice is at fixed position: i-2
+                    if instructions[i - 2]["instruction"] == "push_string":
+                        voice = instructions[i - 2]["args"][0]
 
                 in_target_block = True
                 i += 1
                 continue
 
             if in_target_block:
-                if inst["instruction"].startswith("snd_::"):
+                if inst["instruction"].startswith("snd_::f_1a4"):
+                    in_target_block = False
+                    voice = None
                     continue
 
-                if inst["instruction"].startswith("msg_::") and i >= 2 and instructions[i - 1]["instruction"] == "push_string" and instructions[i - 2]["instruction"] == "push_string":
+                if inst["instruction"].startswith("msg_::f_140") and i >= 2 and instructions[i - 1]["instruction"] == "push_string" and instructions[i - 2]["instruction"] == "push_string":
                     speaker = instructions[i - 2]["args"][0]
                     text = instructions[i - 1]["args"][0]
                     cleaned = text_cleaning(text)
