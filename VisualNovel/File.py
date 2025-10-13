@@ -11,7 +11,7 @@ def parse_args(args=None, namespace=None):
     p.add_argument("--audio_ext", default=".ogg")
     p.add_argument("--audio_dir", default=r"D:\Fuck_VN\voice")
     p.add_argument("--index_json", default=r"D:\Fuck_VN\index.json")
-    p.add_argument("--out_dir", default=r"D:\Fuck_VN\TMP")
+    p.add_argument("--out_dir", default=r"E:\VN_Dataset\TMP_DATA\ROOT_Kao no nai Tsuki -Matsuyoi no Soutsubaki-")
     return p.parse_args(args=args, namespace=namespace)
 
 
