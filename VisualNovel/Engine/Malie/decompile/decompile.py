@@ -1,7 +1,5 @@
 """
 ┌─────────────────────────────────────┐
-│  DAT File Header                    │
-├─────────────────────────────────────┤
 │  Variables Section (Vars)           │
 │  - Count (uint32)                   │
 │  - Variable List                    │
@@ -39,6 +37,7 @@
 │  - Table Length (uint32)            │
 │  - String Data (UTF-16LE)           │
 └─────────────────────────────────────┘
+还没完工，只能正确反编译老版本的exec.dat，新版本把一个page作为一个字符串了。
 """
 
 from vm_parser import VMParser
