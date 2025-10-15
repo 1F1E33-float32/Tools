@@ -76,7 +76,7 @@ class VarItem:
 class FunctionItem:
     name: str
     id: int
-    reserved0: int
+    reserved0: Optional[int]
     vm_code_offset: int
     command: Optional["BaseCommand"] = None
 
