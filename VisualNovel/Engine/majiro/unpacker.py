@@ -7,6 +7,7 @@ import os
 import struct
 from typing import List
 
+
 class struct_t(struct.Struct):
     _meta_fmt: str = ""
     _meta_names: List[str] = []
@@ -34,6 +35,7 @@ class struct_t(struct.Struct):
         values = [getattr(self, name) for name in self._meta_names]
         return struct.pack(fmt or self._meta_fmt, *values)
 
+
 class archeader_t(struct_t):
     def __init__(self, data: bytes | None = None, cur: int = 0):
         self.magic: bytes = b"MajiroArcV3.000\0"
@@ -42,6 +44,7 @@ class archeader_t(struct_t):
         self.data_offset: int = 0
         super().__init__(data, cur, fmt="<16s3I", names=["magic", "count", "name_offset", "data_offset"])
 
+
 class arcentry_t(struct_t):
     def __init__(self, data: bytes | None = None, cur: int = 0, *, fmt: str | None = None, names: List[str] | None = None):
         self.hash: int = 0
@@ -49,6 +52,7 @@ class arcentry_t(struct_t):
         self.length: int = 0
         self._addr = cur  # original address inside the file (debugging aid)
         super().__init__(data, cur, fmt=fmt, names=names)
+
 
 class arcentryv3_t(arcentry_t):
     def __init__(self, data: bytes | None = None, cur: int = 0):
@@ -69,6 +73,7 @@ class arcentryv3_t(arcentry_t):
         for b in data:
             v = (v >> 8) ^ _calc64((v ^ b) & 0xFF)
         return (~v) & 0xFFFFFFFFFFFFFFFF
+
 
 class Arc:
     def __init__(self, data: bytes | None = None, encoding: str = "shift_jis") -> None:
@@ -97,7 +102,8 @@ class Arc:
             end = data.find(b"\0", cur)
             if end == -1:
                 raise ValueError("Corrupted archive: unterminated filename")
-            self.m_names.append(bytes(data[cur:end]).decode(self._encoding, errors="replace"))
+            filename = bytes(data[cur:end]).decode(self._encoding)
+            self.m_names.append(filename)
             cur = end + 1
 
     def export(self, outdir: str) -> None:
@@ -105,25 +111,24 @@ class Arc:
             dst_path = os.path.join(outdir, name)
             os.makedirs(os.path.dirname(dst_path), exist_ok=True)
 
-            print(
-                f"{idx}/{len(self.m_names)} » {name}  "
-                f"hash={entry.hash:016X}  offset={entry.offset:X}  length={entry.length:X}"
-            )
+            print(f"{idx}/{len(self.m_names)} » {name}  hash={entry.hash:016X}  offset={entry.offset:X}  length={entry.length:X}")
 
             with open(dst_path, "wb") as fp:
                 slice_start = entry.offset
                 slice_end = slice_start + entry.length
                 fp.write(self.m_data[slice_start:slice_end])
 
+
 def export_arc(arc_path: str, outdir: str = "out", *, encoding: str = "shift_jis") -> None:
     with open(arc_path, "rb") as f, mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mm:
         arc = Arc(mm, encoding)
         arc.export(outdir)
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--archive",  default=r"D:\GAL\2017_01\Lamune 2\scenario2.arc")
-    parser.add_argument("--outdir",   default=r"D:\Fuck_galgame\scenario")
+    parser.add_argument("--archive", default=r"E:\VN\_tmp\#JA\みずいろリメイク\voice.arc")
+    parser.add_argument("--outdir", default=r"D:\Fuck_VN\voice")
     parser.add_argument("--encoding", default="cp932")
     args = parser.parse_args()
 
