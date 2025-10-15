@@ -37,12 +37,12 @@
 │  - Table Length (uint32)            │
 │  - String Data (UTF-16LE)           │
 └─────────────────────────────────────┘
-还没完工，只能正确反编译老版本的exec.dat，新版本把一个page作为一个字符串了。
+还没完工，远古版本的exec.dat还是不能反编译，结构体动过了.
 """
 
 from vm_parser import VMParser
 
-with open(r"C:\Users\bfloat16\Desktop\MalieScriptEditor\malie_decompiler\old.dat", "rb") as f:
+with open(r"VisualNovel\Engine\Malie\decompile\old.dat", "rb") as f:
     data = f.read()
 
 script = VMParser(data)

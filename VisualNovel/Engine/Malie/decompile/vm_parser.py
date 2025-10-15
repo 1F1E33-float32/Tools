@@ -638,6 +638,7 @@ class VMParser:
         start_offset = self.reader.tell()
 
         self.strings = []
+        self.raw = []
         for start, length in ranges:
             self.reader.seek(start_offset + start)
             data = self.reader.read(length)
@@ -645,34 +646,50 @@ class VMParser:
 
             line_item = self._parse_line_item(text)
             self.strings.append(line_item)
+            self.raw.append(text)
 
-    def _parse_line_item(self, line: str) -> LineItem:
-        # Replace [NAME] marker
+    def _parse_line_item(self, line):
+        # new: '\x07\x08v_gln0001\x00「ああ……」\x07\t\x07\x06\n\n\u3000魂さえ魅入られたかの如く、もはや回避不能の攻撃を前に。\x07\x06\n\n\x07\x08v_gln0002\x00「そうか、おまえは……俺たちは。\x07\t\x07\x06\x07\x08v_gln0003\x00千年の時を経て、\x07\x01再\n 、\x00\x07\x01会\n 、\x00\x07\x01す\n 、\x00\x07\x01る\n 、\x00\x07\x01こ\n 、\x00\x07\x01と\n 、\x00\x07\x01が\n 、\x00\x07\x01出\n 、\x00\x07\x01来\n 、\x00\x07\x01た\n 、\x00\x07\x01の\n 、\x00\x07\x01だ\n 、\x00\x07\x01な\n 、\x00」\x07\x06'
+        # new: '\u3000厳粛に紡がれるは\x07\x01葬想月華\nツクヨミ\x00の神託。\x07\x06\n\u3000神と人を\x07\x01繋\nつな\x00ぎ胎動を始める運命の車輪が、千年の時を超えて\x07\x01第二太陽\nアマテラス\x00と共に\x07\x01燦爛\nさんらん\x00と輝きを放った。\x07\x06\n\u3000そして――\x07\x06'
+        # old: '\x07\x08v_zz00001\x00\x07\x0c1\x00、私の可愛い娘……\x07\t\x07\x06'
+        # old: '\u3000２０××年、東京。五月晴れのこの日は、雲ひとつない夜。人通りの少ないビル街に、人影が一つ。\x07\x06'
         line = line.replace("\a\f\x01\x00", "[NAME]")
 
-        # Check for voice marker
-        voice = None
-        voice_match = re.match(r"\a\x08(?P<voice>v_[^\x00]+)\x00(?P<content>.*)", line, re.DOTALL)
-        if voice_match:
-            voice = voice_match.group("voice")
-            line = voice_match.group("content")
+        # 处理注释格式 \x07\x01被注释的文字\n注释内容\x00 -> (被注释的文字)[注释内容]
+        def replace_ruby(match):
+            base_text = match.group(1)
+            ruby_text = match.group(2)
+            return f"({base_text})[{ruby_text}]"
+        
+        line = re.sub(r"\x07\x01([^\n]+)\n([^\x00]+)\x00", replace_ruby, line)
 
-        # Extract end characters
-        end_chars = ["\t", "\r", "\a", "\b", "\x00", "\x01", "\x02", "\x03", "\x04", "\x05", "\x06", "\x07"]
-        start_pos = len(line) - 1
-        while start_pos >= 0 and line[start_pos] in end_chars:
-            start_pos -= 1
+        result = []
+        
+        # 使用\x07\x06作为分隔符拆分
+        segments = line.split("\x07\x06")
+        
+        for segment in segments:
+            if not segment:
+                continue
+            
+            # 去掉开头的换行符，防止影响\x07\x08的判断
+            segment = segment.lstrip("\n")
+            
+            if not segment:
+                continue
+                
+            # 检查是否包含语音标记
+            voice_match = re.match(r"\x07\x08([^\x00]+)\x00(.+?)(?:\x07\t)?$", segment, re.DOTALL)
+            if voice_match:
+                voice = voice_match.group(1)
+                text_content = voice_match.group(2)
+            else:
+                voice = None
+                text_content = segment
+            
+            result.append((voice, text_content))
 
-        if start_pos != len(line) - 1:
-            end = line[start_pos + 1 :]
-            line = line[: start_pos + 1]
-        else:
-            end = ""
-
-        # Split into text items
-        texts = [StringItem(text, 0) for text in line.split("\n")]
-
-        return LineItem(voice, texts, end)
+        return LineItem(result)
 
     def _create_chapters(self, moji: List[ChapterStringConfig], chapter_names: List[str], chapter_indices: List[int]):
         chapter_indices.append(len(moji))

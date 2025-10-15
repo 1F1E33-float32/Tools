@@ -94,66 +94,11 @@ class StringItem:
     offset: int
     tag: StringTag = StringTag.NONE
 
-    def escape(self) -> str:
-        if not self.text:
-            return "[EMPTY]"
-        if self.text == "　":
-            return "[EMPTY_LINE]"
-
-        result = self.text
-        result = result.replace("\t", "\\t")
-        result = result.replace("\r", "\\r")
-        result = result.replace("\a", "\\a")
-        result = result.replace("\b", "\\b")
-        result = result.replace("\n", "\\n")
-        result = result.replace("\x00", "\\0")
-        result = result.replace("\x01", "\\1")
-        result = result.replace("\x02", "\\2")
-        result = result.replace("\x03", "\\3")
-        result = result.replace("\x04", "\\4")
-        result = result.replace("\x05", "\\5")
-        result = result.replace("\x06", "\\6")
-        return result
-
-    def unescape(self) -> str:
-        if self.text == "[EMPTY]":
-            return ""
-        if self.text == "[EMPTY_LINE]":
-            return "　"
-
-        result = self.text
-        result = result.replace("\\t", "\t")
-        result = result.replace("\\r", "\r")
-        result = result.replace("\\a", "\a")
-        result = result.replace("\\b", "\b")
-        result = result.replace("\\n", "\n")
-        result = result.replace("\\0", "\x00")
-        result = result.replace("\\1", "\x01")
-        result = result.replace("\\2", "\x02")
-        result = result.replace("\\3", "\x03")
-        result = result.replace("\\4", "\x04")
-        result = result.replace("\\5", "\x05")
-        result = result.replace("\\6", "\x06")
-        return result
-
-    def dump(self) -> str:
-        return self.unescape()
-
 
 @dataclass
 class LineItem:
-    voice: Optional[str] = None
-    texts: List[StringItem] = field(default_factory=list)
-    end: str = ""
-
-    @property
-    def text(self) -> str:
-        return "\n".join(item.text for item in self.texts)
-
-    def dump(self) -> str:
-        voice_path = f"\a\b{self.voice}\x00" if self.voice else ""
-        text_content = "\n".join(item.dump().replace("[NAME]", "\a\f\x01\x00") for item in self.texts)
-        return voice_path + text_content + self.end
+    # 存储多个(voice, texts)对的列表
+    items: List[tuple] = field(default_factory=list)
 
 
 @dataclass
