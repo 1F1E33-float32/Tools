@@ -11,8 +11,15 @@ def parse_args(args=None, namespace=None):
     p.add_argument("--audio_ext", default=".ogg")
     p.add_argument("--audio_dir", default=r"D:\Fuck_VN\voice")
     p.add_argument("--index_json", default=r"D:\Fuck_VN\index.json")
-    p.add_argument("--out_dir", default=r"E:\VN_Dataset\TMP_DATA\ROOT_Kao no nai Tsuki -Matsuyoi no Soutsubaki-")
+    p.add_argument("--out_dir", default=r"E:\VN_Dataset\TMP_DATA\NekoNeko Soft_Mizuiro Remake")
     return p.parse_args(args=args, namespace=namespace)
+
+
+def build_file_index(directory):
+    index = {}
+    for item in os.listdir(directory):
+        index[item.lower()] = item
+    return index
 
 
 def main(audio_ext, audio_dir, index_path, out_dir):
@@ -22,33 +29,24 @@ def main(audio_ext, audio_dir, index_path, out_dir):
     os.makedirs(out_dir, exist_ok=True)
     new_data = []
 
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        BarColumn(),
-        TaskProgressColumn(),
-        TimeRemainingColumn(),
-    ) as progress:
+    with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), BarColumn(), TaskProgressColumn(), TimeRemainingColumn()) as progress:
+        file_index = build_file_index(audio_dir)
         task = progress.add_task("Processing", total=len(data))
 
         for rec in data:
             v = rec["Voice"]
             sp = rec["Speaker"]
 
-            # Voice为None的直接保留
-            if v is None:
-                new_data.append(rec)
-                progress.update(task, advance=1)
-                continue
+            # 从索引中查找
+            target_filename = v + audio_ext
+            real_filename = file_index.get(target_filename.lower())
 
-            # 直接拼接源文件路径
-            src = os.path.join(audio_dir, v + audio_ext)
-
-            if os.path.exists(src):
+            if real_filename:
+                src = os.path.join(audio_dir, real_filename)
                 # 目标路径：out_dir/Speaker/Voice
                 dst_dir = os.path.join(out_dir, sp)
                 os.makedirs(dst_dir, exist_ok=True)
-                # 统一文件名格式（加上扩展名）
+                # 使用index中的文件名（保持一致性）
                 voice_filename = v + audio_ext
                 dst = os.path.join(dst_dir, voice_filename)
                 shutil.move(src, dst)
@@ -58,7 +56,7 @@ def main(audio_ext, audio_dir, index_path, out_dir):
                 rec_copy["Voice"] = voice_filename
                 new_data.append(rec_copy)
             else:
-                print(f"找不到文件: {src}")
+                print(f"找不到文件: {target_filename}")
 
             progress.update(task, advance=1)
 
