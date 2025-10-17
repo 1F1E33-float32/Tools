@@ -3,13 +3,13 @@ import multiprocessing
 import os
 import struct
 import zlib
+from compression.zstd import ZstdDecompressor
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional
 
 import numpy as np
-import zstandard as zstd
 from huffman_decoder import HuffmanDecoder
 from tqdm import tqdm
 
@@ -67,7 +67,7 @@ class PackageUnpacker:
         if self.compression_method == 4:
             return zlib.decompress(compressed_data)
         elif self.compression_method == 7:
-            return zstd.ZstdDecompressor().decompress(compressed_data, max_output_size=original_size)
+            return ZstdDecompressor().decompress(compressed_data)
 
     def _extract_single_file(self, entry: PackageEntry, fp, output_dir: Path, pbar: Optional[tqdm] = None):
         fp.seek(entry.position, os.SEEK_SET)
@@ -98,7 +98,7 @@ class PackageUnpacker:
         if threads <= 0:
             threads = multiprocessing.cpu_count()
 
-        with tqdm(total=self.entry_count, desc="Extracting", unit="file") as pbar:
+        with tqdm(total=self.entry_count, ncols=150) as pbar:
             if threads == 1:
                 with open(self.pac_path, "rb") as fp:
                     for entry in self.entries:
@@ -123,7 +123,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("pac_file", help="Package file path")
     parser.add_argument("output_dir", help="Output directory")
-    parser.add_argument("--codepage", default="utf-8",)
+    parser.add_argument("--codepage", default="utf-8")
     parser.add_argument("--threads", type=int, default=0)
 
     args = parser.parse_args()
