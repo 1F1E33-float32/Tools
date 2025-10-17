@@ -2,12 +2,13 @@
 name = "tools"
 version = "1.0.0"
 description = "game tools"
-requires-python = ">=3.14"
+requires-python = ">=3.13"
 dependencies = [
     "apsw-sqlite3mc>=3.50.4.0",
     "av>=15.0.0",
     "chardet>=5.2.0",
     "flatbuffers>=25.2.10",
+    "lupa>=2.5",
     "lzss>=0.3",
     "msgpack>=1.1.1",
     "numpy>=2.3.2",
@@ -19,5 +20,6 @@ dependencies = [
     "ruamel-yaml>=0.18.15",
     "selenium>=4.34.2",
     "tqdm>=4.67.1",
+    "unitypy>=1.23.0",
     "xxhash>=3.5.0",
 ]
