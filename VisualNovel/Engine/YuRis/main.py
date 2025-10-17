@@ -6,7 +6,7 @@ from pathlib import Path
 from decompiler.yscd import YSCD
 from decompiler.yuris_script import YuRisScript
 
-DEFAULT_KEY = struct.pack("<I", 0x4A415E60)
+DEFAULT_KEY = struct.pack("<I", 0x2939099B)
 
 
 def args_parse(argv=None):
@@ -27,6 +27,7 @@ def args_parse(argv=None):
         "--root",
         dest="root",
         metavar="DIR",
+        default=r"D:\Fuck_VN\ysbin",
         help="Root directory containing ysc.ybn/ysl.ybn/yst_list.ybn, etc.",
     )
     parser.add_argument(
@@ -42,7 +43,7 @@ def args_parse(argv=None):
         "--format",
         dest="format",
         metavar="FORMAT",
-        default="txt",
+        default="txt+json",
         help="Output format: txt | json | txt+json (default: txt).",
     )
     parser.add_argument(
