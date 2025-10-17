@@ -7,8 +7,8 @@ from tqdm import tqdm
 
 def parse_args(args=None, namespace=None):
     p = argparse.ArgumentParser()
-    p.add_argument("-JA", type=str, default=r"D:\Fuck_galgame\script")
-    p.add_argument("-op", type=str, default=r'D:\Fuck_galgame\index.json')
+    p.add_argument("-JA", type=str, default=r"D:\Fuck_VN\script")
+    p.add_argument("-op", type=str, default=r'D:\Fuck_VN\index.json')
     p.add_argument("-ft", type=float, default=0)
     return p.parse_args(args=args, namespace=namespace)
 
@@ -127,7 +127,7 @@ def main(JA_dir, op_json, force_version):
     filelist = glob(f"{JA_dir}/**/*.scr", recursive=True)
 
     results = []
-    for fn in tqdm(filelist):
+    for fn in tqdm(filelist, ncols=150):
         lines = load_lines(fn)
 
         processor(lines, results)

@@ -22,6 +22,7 @@ dependencies = [
     "ruamel-yaml>=0.18.15",
     "selenium>=4.34.2",
     "tqdm>=4.67.1",
+    "typetreegeneratorapi>=0.0.6",
     "unitypy>=1.23.0",
     "unrpa>=2.3.0",
     "xmltodict>=0.14.2",

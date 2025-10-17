@@ -1,45 +1,49 @@
+import argparse
+import json
 import os
 import struct
-import json
-import argparse
 
 MAGIC = b"NEKOSDK_ADVSCRIPT2\x00"
 
+
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input-dir", default=r"D:\Fuck_galgame\script")
-    parser.add_argument("--output-dir", default=r"D:\Fuck_galgame")
+    parser.add_argument("--input-dir", default=r"D:\Fuck_VN\script")
+    parser.add_argument("--output-dir", default=r"D:\Fuck_VN")
     return parser.parse_args()
 
+
 def text_cleaning(text):
-    text = text.replace('『', '').replace('』', '')
-    text = text.replace('「', '').replace('」', '')
-    text = text.replace('（', '').replace('）', '')
-    text = text.replace('　', '')
-    text = text.replace('\n', '').replace('\r', '')
+    text = text.replace("『", "").replace("』", "")
+    text = text.replace("「", "").replace("」", "")
+    text = text.replace("（", "").replace("）", "")
+    text = text.replace("　", "")
+    text = text.replace("\n", "").replace("\r", "")
     return text
+
 
 def read_str(f):
     length_data = f.read(4)
     if len(length_data) < 4:
         raise EOFError("Unexpected EOF reading string length")
-    (length,) = struct.unpack('<I', length_data)
+    (length,) = struct.unpack("<I", length_data)
     raw = f.read(length)
-    return raw.decode('shift_jis', errors='replace')
+    return raw.decode("shift_jis", errors="replace")
+
 
 def extract_file(in_path):
     results = []
-    with open(in_path, 'rb') as f:
+    with open(in_path, "rb") as f:
         # verify magic header
         if f.read(len(MAGIC)) != MAGIC:
             raise ValueError(f"Invalid magic in {in_path}")
         # number of nodes
-        (qty,) = struct.unpack('<I', f.read(4))
+        (qty,) = struct.unpack("<I", f.read(4))
         nodes = []
         for _ in range(qty):
-            id, type1, ofs, opcode = struct.unpack('<IIII', f.read(16))
+            id, type1, ofs, opcode = struct.unpack("<IIII", f.read(16))
             f.read(128)
-            (next_id,) = struct.unpack('<I', f.read(4))
+            (next_id,) = struct.unpack("<I", f.read(4))
             f.read(64)
             # read 33 strings
             strs = [read_str(f) for __ in range(33)]
@@ -48,18 +52,20 @@ def extract_file(in_path):
     # filter opcode == 5 and extract fields
     for item in nodes:
         if item[1] == 5:
-            speaker = item[3][1].rstrip('\x00').replace(" ", "")
+            speaker = item[3][1].rstrip("\x00").replace(" ", "")
             if speaker == "":
                 continue
-            text = text_cleaning(item[3][2].rstrip('\x00'))
-            voice = item[3][3].rstrip('\x00').split("\\")[-1].split(".")[0]
+            text = text_cleaning(item[3][2].rstrip("\x00"))
+            voice = item[3][3].rstrip("\x00").split("\\")[-1].split(".")[0]
             if voice == "":
                 continue
-            results.append({
-                "Speaker": speaker,
-                "Voice": voice,
-                "Text": text,
-            })
+            results.append(
+                {
+                    "Speaker": speaker,
+                    "Voice": voice,
+                    "Text": text,
+                }
+            )
     return results
 
 
@@ -88,12 +94,12 @@ def main():
             unique_entries.append(entry)
 
     # write to JSON
-    index_path = os.path.join(output_dir, 'index.json')
-    with open(index_path, 'w', encoding='utf-8') as jf:
+    index_path = os.path.join(output_dir, "index.json")
+    with open(index_path, "w", encoding="utf-8") as jf:
         json.dump(unique_entries, jf, ensure_ascii=False, indent=2)
 
     print(f"Processed {len(all_entries)} entries, {len(unique_entries)} unique voices saved to {index_path}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

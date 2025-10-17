@@ -58,7 +58,7 @@ def main(JA_dir, op_json, force_type):
         case 2:
             disassembler = Disassembler(r"VisualNovel\Engine\NeXAS\version_2.yaml")
     disassembler.load_and_disassemble_global(global_bin)
-    for filename in tqdm(filtered_filelist):
+    for filename in tqdm(filtered_filelist, ncols=150):
         dis_result = disassembler.disassemble(filename)
         for label in dis_result["code"]:
             for i, block in enumerate(label["instructions"]):
@@ -79,7 +79,7 @@ def main(JA_dir, op_json, force_type):
                                     match = re.match(r"\[\d+\](.*)", Speaker)
                                     if match:
                                         Speaker = match.group(1)
-                                        Speaker = Speaker.replace("　", "").replace(" ", "").replace("\t", "")
+                                        Speaker = Speaker.replace("　", "").replace(" ", "").replace("\t", "").replace("*", "")
                                         if Speaker == "":
                                             Speaker = "？？？"
                                         Speaker = re.sub(r"@[0-9A-Za-z_-]*", "", Speaker)

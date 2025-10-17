@@ -11,14 +11,16 @@ def parse_args(args=None, namespace=None):
     p.add_argument("--audio_ext", default=".ogg")
     p.add_argument("--audio_dir", default=r"D:\Fuck_VN\voice")
     p.add_argument("--index_json", default=r"D:\Fuck_VN\index.json")
-    p.add_argument("--out_dir", default=r"E:\VN_Dataset\TMP_DATA\NekoNeko Soft_Mizuiro Remake")
+    p.add_argument("--out_dir", default=r"E:\VN_Dataset\TMP_DATA\CLOCKUP team.DYO_Zwei Worter - HD Remaster")
     return p.parse_args(args=args, namespace=namespace)
 
 
 def build_file_index(directory):
     index = {}
-    for item in os.listdir(directory):
-        index[item.lower()] = item
+    for root, dirs, files in os.walk(directory):
+        for filename in files:
+            rel_path = os.path.relpath(os.path.join(root, filename), directory)
+            index[filename.lower()] = rel_path
     return index
 
 
@@ -39,10 +41,10 @@ def main(audio_ext, audio_dir, index_path, out_dir):
 
             # 从索引中查找
             target_filename = v + audio_ext
-            real_filename = file_index.get(target_filename.lower())
+            rel_path = file_index.get(target_filename.lower())
 
-            if real_filename:
-                src = os.path.join(audio_dir, real_filename)
+            if rel_path:
+                src = os.path.join(audio_dir, rel_path)
                 # 目标路径：out_dir/Speaker/Voice
                 dst_dir = os.path.join(out_dir, sp)
                 os.makedirs(dst_dir, exist_ok=True)
