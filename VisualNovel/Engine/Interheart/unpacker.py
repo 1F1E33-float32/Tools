@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import argparse
 import io
 import struct
@@ -8,18 +6,22 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import BinaryIO, List
 
+
 def _read_uint32(f: BinaryIO) -> int:
     data = f.read(4)
     if len(data) != 4:
         raise EOFError("Unexpected end of file while reading uint32")
     return struct.unpack("<I", data)[0]
 
+
 def _copy_overlapped(buf: bytearray, src: int, dst: int, count: int) -> None:
     for _ in range(count):
         buf.append(buf[src])
         src += 1
 
+
 ZLC2_SIGNATURE = 0x32434C5A  # 'ZLC2' little-endian
+
 
 def _decompress_zlc2(data: bytes) -> bytes:
     if len(data) < 8 or struct.unpack("<I", data[:4])[0] != ZLC2_SIGNATURE:
@@ -53,6 +55,7 @@ def _decompress_zlc2(data: bytes) -> bytes:
             mask >>= 1
     return bytes(out[:output_size])
 
+
 @dataclass
 class FpkEntry:
     name: str
@@ -68,6 +71,7 @@ class FpkEntry:
             if decomp == prev:
                 return decomp
             prev = decomp
+
 
 class FpkArchive:
     PLAIN_NAME_SIZES = (0x10, 0x18)
@@ -166,6 +170,7 @@ class FpkArchive:
             entries.append(FpkEntry(name, offset, size))
         return entries
 
+
 def _classify_archive(file_path: Path) -> tuple[Path | None, str]:
     fname = file_path.stem  # without .fpk
     lower = fname.lower()
@@ -182,9 +187,10 @@ def _classify_archive(file_path: Path) -> tuple[Path | None, str]:
 
     return None, "unrecognised pattern"
 
+
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
-    p.add_argument("--indir", type=Path, default=Path(r"D:\GAL\2019_11\Mama x Kano ~Oshiego no Okaa-san ga Ecchi na Sensei de, Musume no Sewa o Yaitara Dame Desu ka~"))
+    p.add_argument("--indir", type=Path, default=Path(r"E:\VN\_tmp\2025_06\WANNABE→CREATORS 2"))
     p.add_argument("--outdir", type=Path, default=Path(r"D:\Fuck_galgame"))
     args = p.parse_args()
 

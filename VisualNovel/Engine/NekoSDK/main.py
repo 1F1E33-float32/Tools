@@ -59,13 +59,7 @@ def extract_file(in_path):
             voice = item[3][3].rstrip("\x00").split("\\")[-1].split(".")[0]
             if voice == "":
                 continue
-            results.append(
-                {
-                    "Speaker": speaker,
-                    "Voice": voice,
-                    "Text": text,
-                }
-            )
+            results.append({"Speaker": speaker, "Voice": voice, "Text": text})
     return results
 
 
