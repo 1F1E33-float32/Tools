@@ -7,6 +7,7 @@ dependencies = [
     "apsw-sqlite3mc>=3.50.4.0",
     "av>=15.0.0",
     "chardet>=5.2.0",
+    "cppdael",
     "flatbuffers>=25.2.10",
     "lupa>=2.5",
     "lzss>=0.3",
@@ -24,3 +25,6 @@ dependencies = [
     "xxhash>=3.5.0",
     "zstandard>=0.25.0",
 ]
+
+[tool.uv.sources]
+cppdael = { git = "https://github.com/squaresmile/cppdael" }
