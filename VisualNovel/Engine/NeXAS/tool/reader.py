@@ -12,7 +12,6 @@ class Reader:
     def __init__(self, config):
         self.data = io.BytesIO()
         self.config = config
-        self.is_binu8 = False  # Flag to track if we're reading a .binu8 file
         if self.config["string_format"] == NULL_TERMINATED:
             self.read_string = self._read_null_terminated_string
         elif self.config["string_format"] == LENGTH_PREFIXED:
@@ -59,9 +58,6 @@ class ScriptReader(Reader):
         length = self._read_i32()
         result = {}
         for i in range(length):
-            # For .binu8 format, skip the 4-byte string length prefix
-            if self.is_binu8:
-                self.data.read(4)  # Skip 4 bytes (string length)
             raw = self.read_string()
             result[i] = SingleQuotedScalarString(raw)
         return result
@@ -92,8 +88,6 @@ class ScriptReader(Reader):
         return functions
 
     def read_script_from_file(self, input: str) -> Script:
-        # Detect if this is a .binu8 file
-        self.is_binu8 = input.lower().endswith(".binu8")
 
         with open(input, "rb") as file:
             self.data = io.BytesIO(file.read())
@@ -110,9 +104,6 @@ class ScriptReader(Reader):
         return Script(init_code, code, string_table, int_var_names, string_var_names, banks_params, functions)
 
     def read_global_script_from_file(self, input: str) -> GlobalScript:
-        # Detect if this is a .binu8 file
-        self.is_binu8 = input.lower().endswith(".binu8")
-
         with open(input, "rb") as file:
             self.data = io.BytesIO(file.read())
 

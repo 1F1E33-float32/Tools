@@ -13,7 +13,7 @@ def parse_args(args=None, namespace=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("-JA", type=str, default=r"D:\Fuck_VN\script")
     parser.add_argument("-op", type=str, default=r"D:\Fuck_VN\index.json")
-    parser.add_argument("-ft", type=float, default=1)
+    parser.add_argument("-ft", type=float, default=3)
     return parser.parse_args(args=args, namespace=namespace)
 
 
@@ -57,6 +57,8 @@ def main(JA_dir, op_json, force_type):
             disassembler = Disassembler(r"VisualNovel\Engine\NeXAS\version_1.yaml")
         case 2:
             disassembler = Disassembler(r"VisualNovel\Engine\NeXAS\version_2.yaml")
+        case 3:
+            disassembler = Disassembler(r"VisualNovel\Engine\NeXAS\version_3.yaml")
     disassembler.load_and_disassemble_global(global_bin)
     for filename in tqdm(filtered_filelist, ncols=150):
         dis_result = disassembler.disassemble(filename)

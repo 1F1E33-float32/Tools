@@ -1,15 +1,14 @@
-import argparse
 import multiprocessing
 import os
 import struct
 import zlib
-from compression.zstd import ZstdDecompressor
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional
 
 import numpy as np
+import zstandard
 from huffman_decoder import HuffmanDecoder
 from tqdm import tqdm
 
@@ -67,7 +66,7 @@ class PackageUnpacker:
         if self.compression_method == 4:
             return zlib.decompress(compressed_data)
         elif self.compression_method == 7:
-            return ZstdDecompressor().decompress(compressed_data)
+            return zstandard.ZstdDecompressor().decompress(compressed_data)
 
     def _extract_single_file(self, entry: PackageEntry, fp, output_dir: Path, pbar: Optional[tqdm] = None):
         fp.seek(entry.position, os.SEEK_SET)
@@ -120,13 +119,10 @@ class PackageUnpacker:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("pac_file", help="Package file path")
-    parser.add_argument("output_dir", help="Output directory")
-    parser.add_argument("--codepage", default="utf-8")
-    parser.add_argument("--threads", type=int, default=0)
+    root = r"E:\VN\_tmp\2025_02\Okayu Nyumu!"
+    codepage = "utf-8"
+    unpacker = PackageUnpacker(os.path.join(root, "Script.pac"), codepage)
+    unpacker.extract(r"D:\Fuck_VN\Script", threads=0)
 
-    args = parser.parse_args()
-
-    unpacker = PackageUnpacker(args.pac_file, args.codepage)
-    unpacker.extract(args.output_dir, threads=args.threads)
+    unpacker = PackageUnpacker(os.path.join(root, "Voice.pac"), codepage)
+    unpacker.extract(r"D:\Fuck_VN\Voice", threads=0)
