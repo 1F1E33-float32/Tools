@@ -22,4 +22,5 @@ dependencies = [
     "tqdm>=4.67.1",
     "unitypy>=1.23.0",
     "xxhash>=3.5.0",
+    "zstandard>=0.25.0",
 ]

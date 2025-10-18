@@ -6,8 +6,8 @@ from tqdm import tqdm
 
 def parse_args(args=None, namespace=None):
     parser = argparse.ArgumentParser()
-    parser.add_argument("-JA", type=str, default=r"D:\Fuck_galgame\script")
-    parser.add_argument("-op", type=str, default=r'D:\Fuck_galgame\index.json')
+    parser.add_argument("-JA", type=str, default=r"D:\Fuck_VN\script")
+    parser.add_argument("-op", type=str, default=r'D:\Fuck_VN\index.json')
     parser.add_argument("-ft", type=int, default=0)
     return parser.parse_args(args=args, namespace=namespace)
 
@@ -25,7 +25,7 @@ def main(JA_dir, op_json, ft):
             dialogue_start0 = False
             dialogue_start1 = False
             results = []
-            for filename in tqdm(filelist):
+            for filename in tqdm(filelist, ncols=150):
                 with open(filename, 'rb') as file:
                     data = file.read()
 
@@ -75,7 +75,7 @@ def main(JA_dir, op_json, ft):
             filelist = glob(f"{JA_dir}/**/*.wsc", recursive=True)
             dialogue_start0 = False
             results = []
-            for filename in tqdm(filelist):
+            for filename in tqdm(filelist, ncols=150):
                 with open(filename, 'rb') as file:
                     data = file.read()
 
@@ -116,12 +116,12 @@ def main(JA_dir, op_json, ft):
                         i += 1
 
     replace_dict = {}
-    for Speaker, Speaker_id, Voice, Text in tqdm(results):
+    for Speaker, Speaker_id, Voice, Text in tqdm(results, ncols=150):
         if Speaker != '？？？' and Speaker != '' and Speaker_id not in replace_dict:
             replace_dict[Speaker_id] = Speaker
 
     fixed_results = []
-    for Speaker, Speaker_id, Voice, Text in tqdm(results):
+    for Speaker, Speaker_id, Voice, Text in tqdm(results, ncols=150):
         if (Speaker == '？？？' or Speaker == '') and Speaker_id in replace_dict:
             fixed_results.append((replace_dict[Speaker_id], Speaker_id, Voice, Text))
         else:
