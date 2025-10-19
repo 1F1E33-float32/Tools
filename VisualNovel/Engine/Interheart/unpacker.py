@@ -190,8 +190,8 @@ def _classify_archive(file_path: Path) -> tuple[Path | None, str]:
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
-    p.add_argument("--indir", type=Path, default=Path(r"E:\VN\_tmp\2025_06\WANNABE→CREATORS 2"))
-    p.add_argument("--outdir", type=Path, default=Path(r"D:\Fuck_galgame"))
+    p.add_argument("--indir", type=Path, default=Path(r"E:\VN\_tmp\2019_11\Mama x Kano ~Oshiego no Okaa-san ga Ecchi na Sensei de, Musume no Sewa o Yaitara Dame Desu ka~"))
+    p.add_argument("--outdir", type=Path, default=Path(r"D:\Fuck_VN"))
     args = p.parse_args()
 
     if not args.indir.is_dir():
