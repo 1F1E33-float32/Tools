@@ -2,7 +2,7 @@ import argparse
 import json
 import os
 
-from decompile import process_file
+from disasm import process_file
 from mdb_parser import load_name_table, load_voice_table
 
 
