@@ -5,6 +5,7 @@ import struct
 
 import asdis
 import bgiop
+import re
 
 
 def parse_args():
@@ -79,8 +80,6 @@ def parse(code, hdr):
 
 
 def parse_instruction(inst_str):
-    import re
-
     # Match function_name(args)
     match = re.match(r"([A-Za-z_][A-Za-z0-9_:]*)\((.*)\)", inst_str)
     if match:

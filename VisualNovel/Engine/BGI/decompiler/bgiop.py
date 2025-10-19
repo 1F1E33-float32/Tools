@@ -2,7 +2,7 @@ import re
 
 import asdis
 
-re_fcn = re.compile("([A-Za-z_][A-Za-z0-9_:]*)\(.*\)")
+re_fcn = re.compile(r"([A-Za-z_][A-Za-z0-9_:]*)\(.*\)")
 
 offsets = set()
 
