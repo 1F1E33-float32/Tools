@@ -5,7 +5,7 @@ import re
 
 def parse_args(args=None, namespace=None):
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input", type=str, default=r"D:\Fuck_VN\hoshishiro_01.book.json")
+    parser.add_argument("--input", type=str, default=r"D:\Fuck_VN\book.json")
     parser.add_argument("--op", type=str, default=r"D:\Fuck_VN\index.json")
     return parser.parse_args(args=args, namespace=namespace)
 
@@ -13,7 +13,7 @@ def parse_args(args=None, namespace=None):
 def text_cleaning(text):
     text = re.sub(r"<[^<>]+>", "", text)
     text = text.replace("『", "").replace("』", "").replace("「", "").replace("」", "").replace("（", "").replace("）", "")
-    text = text.replace(" ", "").replace("\n", "").replace("　", "")
+    text = text.replace(" ", "").replace("　", "").replace("\n", "").replace("\r", "")
     return text
 
 
@@ -58,7 +58,7 @@ def main(input_path, op_json):
             if Speaker is None:
                 Speaker = "？？？"
 
-            Speaker = text_cleaning(Speaker)
+            Speaker = Speaker.replace(" ", "").replace("　", "").replace("?", "？")
 
             Text = row_map["Text"]
             if Text is None:
