@@ -92,7 +92,7 @@ def process_type1_0(lines, results):
             text_line = re.sub(r"\[chr2?\s+[^\]]+\]", "", text_line)
 
             tmp.append(text_line)
-            if "[np" in text_line or "[wvl" in text_line:
+            if "[np" in text_line or "[wv" in text_line:
                 break
             i += 1
 

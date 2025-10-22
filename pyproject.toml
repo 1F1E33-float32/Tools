@@ -20,6 +20,7 @@ dependencies = [
     "rich>=14.1.0",
     "ruamel-yaml>=0.18.15",
     "selenium>=4.34.2",
+    "tools-boost",
     "tqdm>=4.67.1",
     "unitypy>=1.23.0",
     "xxhash>=3.5.0",
@@ -27,4 +28,5 @@ dependencies = [
 ]
 
 [tool.uv.sources]
+tools-boost = { git = "https://github.com/1F1E33-float32/Tools_Boost" }
 cppdael = { git = "https://github.com/squaresmile/cppdael" }

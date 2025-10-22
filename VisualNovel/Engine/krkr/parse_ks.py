@@ -30,7 +30,7 @@ def parse_args(args=None, namespace=None):
     p = argparse.ArgumentParser()
     p.add_argument("-JA", type=str, default=r"D:\Fuck_VN\scenario")
     p.add_argument("-op", type=str, default=r"D:\Fuck_VN\index.json")
-    p.add_argument("-ft", type=float, default=0.5)
+    p.add_argument("-ft", type=float, default=1.0)
     return p.parse_args(args=args, namespace=namespace)
 
 
@@ -82,7 +82,7 @@ def main(JA_dir, op_json, force_version):
     filelist = glob(f"{JA_dir}/**/*.ks", recursive=True) + glob(f"{JA_dir}/**/*.ms", recursive=True) + glob(f"{JA_dir}/**/*.scn", recursive=True) + glob(f"{JA_dir}/**/*.txt", recursive=True)
 
     results = []
-    for fn in tqdm(filelist):
+    for fn in tqdm(filelist, ncols=150):
         lines = load_lines(fn)
 
         processor(lines, results)
