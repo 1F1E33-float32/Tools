@@ -5,7 +5,7 @@ import re
 import struct
 
 import pefile
-from tools_boost import cat_system_crypto
+from tools_boost import catsystem2_crypto
 
 
 def _32(x):
@@ -44,16 +44,12 @@ def get_pass_from_exe(filename):
     if code_data is None or len(code_data) < 8:
         return None
 
-    # Process key data
     if key_data is not None:
-        # XOR each byte with 0xCD
         key_data = bytes(b ^ 0xCD for b in key_data)
     else:
-        # Default key
         key_data = b"windmill"
 
-    # Decrypt using Blowfish
-    bf = cat_system_crypto.Blowfish(key_data)
+    bf = catsystem2_crypto.Blowfish(key_data)
     decrypted_size = len(code_data) // 8 * 8
     decrypted = bf.decrypt(code_data[:decrypted_size])
 
@@ -81,8 +77,8 @@ class ExtractKIF:
             fileinfo.append((k10.decode("utf-8").split("\0")[0], k11, k12))
             if fileinfo[-1][0] == "__key__.dat":
                 key0 = self.genseed(sk)
-                key1 = struct.pack("I", cat_system_crypto.MT(k12).genrand())
-                bf, flag_decrypt = cat_system_crypto.Blowfish(key1), True
+                key1 = struct.pack("I", catsystem2_crypto.MT(k12).genrand())
+                bf, flag_decrypt = catsystem2_crypto.Blowfish(key1), True
 
         pathout = output_path
         if not os.path.exists(pathout):
@@ -91,7 +87,7 @@ class ExtractKIF:
             if fileinfo[i][0] == "__key__.dat":
                 continue
             if flag_decrypt:
-                k10 = self.decfilename(fileinfo[i][0], cat_system_crypto.MT(key0 + i).genrand())
+                k10 = self.decfilename(fileinfo[i][0], catsystem2_crypto.MT(key0 + i).genrand())
                 k11, k12 = _32(fileinfo[i][1] + i), fileinfo[i][2]
                 k11, k12 = struct.unpack("II", bf.decrypt(struct.pack("II", k11, k12)))
                 fileinfo[i] = (k10, k11, k12)
@@ -163,11 +159,9 @@ def find_pcm_files(game_dir):
     pattern = os.path.join(game_dir, "pcm_*.int")
     pcm_files = glob.glob(pattern)
 
-    # Filter out pcm_tag.int and validate pattern
     valid_files = []
     for file_path in pcm_files:
         filename = os.path.basename(file_path)
-        # Extract the part between pcm_ and .int
         match = re.match(r"pcm_([a-zA-Z]+)\.int$", filename)
         if match and match.group(1) != "tag":
             valid_files.append(file_path)
