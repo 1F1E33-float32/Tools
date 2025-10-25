@@ -19,7 +19,7 @@ class CharacterAIExcelTable(object):
     @classmethod
     def GetRootAsCharacterAIExcelTable(cls, buf, offset=0):
         """This method is deprecated. Please switch to GetRootAs."""
-        return cls.GetRootAs(buf, offset)   
+        return cls.GetRootAs(buf, offset)
     # CharacterAIExcelTable
     def Init(self, buf, pos):
         self._tab = flatbuffers.table.Table(buf, pos)

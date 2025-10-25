@@ -67,7 +67,7 @@ class MiniGameDefenseFixedStatExcel(object):
         return 0
 
     # MiniGameDefenseFixedStatExcel
-    def Equipment1Level(self):
+    def Equipment1level(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(16))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Int32Flags, o + self._tab.Pos)
@@ -81,7 +81,7 @@ class MiniGameDefenseFixedStatExcel(object):
         return 0
 
     # MiniGameDefenseFixedStatExcel
-    def Equipment2Level(self):
+    def Equipment2level(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(20))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Int32Flags, o + self._tab.Pos)
@@ -95,7 +95,7 @@ class MiniGameDefenseFixedStatExcel(object):
         return 0
 
     # MiniGameDefenseFixedStatExcel
-    def Equipment3Level(self):
+    def Equipment3level(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(24))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Int32Flags, o + self._tab.Pos)
@@ -171,11 +171,11 @@ def MiniGameDefenseFixedStatExcelAddEquipment1Tier(builder, equipment1Tier):
 def AddEquipment1Tier(builder, equipment1Tier):
     MiniGameDefenseFixedStatExcelAddEquipment1Tier(builder, equipment1Tier)
 
-def MiniGameDefenseFixedStatExcelAddEquipment1Level(builder, equipment1Level):
-    builder.PrependInt32Slot(6, equipment1Level, 0)
+def MiniGameDefenseFixedStatExcelAddEquipment1level(builder, equipment1level):
+    builder.PrependInt32Slot(6, equipment1level, 0)
 
-def AddEquipment1Level(builder, equipment1Level):
-    MiniGameDefenseFixedStatExcelAddEquipment1Level(builder, equipment1Level)
+def AddEquipment1level(builder, equipment1level):
+    MiniGameDefenseFixedStatExcelAddEquipment1level(builder, equipment1level)
 
 def MiniGameDefenseFixedStatExcelAddEquipment2Tier(builder, equipment2Tier):
     builder.PrependInt32Slot(7, equipment2Tier, 0)
@@ -183,11 +183,11 @@ def MiniGameDefenseFixedStatExcelAddEquipment2Tier(builder, equipment2Tier):
 def AddEquipment2Tier(builder, equipment2Tier):
     MiniGameDefenseFixedStatExcelAddEquipment2Tier(builder, equipment2Tier)
 
-def MiniGameDefenseFixedStatExcelAddEquipment2Level(builder, equipment2Level):
-    builder.PrependInt32Slot(8, equipment2Level, 0)
+def MiniGameDefenseFixedStatExcelAddEquipment2level(builder, equipment2level):
+    builder.PrependInt32Slot(8, equipment2level, 0)
 
-def AddEquipment2Level(builder, equipment2Level):
-    MiniGameDefenseFixedStatExcelAddEquipment2Level(builder, equipment2Level)
+def AddEquipment2level(builder, equipment2level):
+    MiniGameDefenseFixedStatExcelAddEquipment2level(builder, equipment2level)
 
 def MiniGameDefenseFixedStatExcelAddEquipment3Tier(builder, equipment3Tier):
     builder.PrependInt32Slot(9, equipment3Tier, 0)
@@ -195,11 +195,11 @@ def MiniGameDefenseFixedStatExcelAddEquipment3Tier(builder, equipment3Tier):
 def AddEquipment3Tier(builder, equipment3Tier):
     MiniGameDefenseFixedStatExcelAddEquipment3Tier(builder, equipment3Tier)
 
-def MiniGameDefenseFixedStatExcelAddEquipment3Level(builder, equipment3Level):
-    builder.PrependInt32Slot(10, equipment3Level, 0)
+def MiniGameDefenseFixedStatExcelAddEquipment3level(builder, equipment3level):
+    builder.PrependInt32Slot(10, equipment3level, 0)
 
-def AddEquipment3Level(builder, equipment3Level):
-    MiniGameDefenseFixedStatExcelAddEquipment3Level(builder, equipment3Level)
+def AddEquipment3level(builder, equipment3level):
+    MiniGameDefenseFixedStatExcelAddEquipment3level(builder, equipment3level)
 
 def MiniGameDefenseFixedStatExcelAddCharacterWeaponGrade(builder, characterWeaponGrade):
     builder.PrependInt32Slot(11, characterWeaponGrade, 0)

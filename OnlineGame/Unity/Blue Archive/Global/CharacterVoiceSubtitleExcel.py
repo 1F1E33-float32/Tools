@@ -53,7 +53,7 @@ class CharacterVoiceSubtitleExcel(object):
         return 0
 
     # CharacterVoiceSubtitleExcel
-    def DurationKr(self):
+    def Durationkr(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(12))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Int64Flags, o + self._tab.Pos)
@@ -131,11 +131,11 @@ def CharacterVoiceSubtitleExcelAddDuration(builder, duration):
 def AddDuration(builder, duration):
     CharacterVoiceSubtitleExcelAddDuration(builder, duration)
 
-def CharacterVoiceSubtitleExcelAddDurationKr(builder, durationKr):
-    builder.PrependInt64Slot(4, durationKr, 0)
+def CharacterVoiceSubtitleExcelAddDurationkr(builder, durationkr):
+    builder.PrependInt64Slot(4, durationkr, 0)
 
-def AddDurationKr(builder, durationKr):
-    CharacterVoiceSubtitleExcelAddDurationKr(builder, durationKr)
+def AddDurationkr(builder, durationkr):
+    CharacterVoiceSubtitleExcelAddDurationkr(builder, durationkr)
 
 def CharacterVoiceSubtitleExcelAddSeparate(builder, separate):
     builder.PrependBoolSlot(5, separate, 0)

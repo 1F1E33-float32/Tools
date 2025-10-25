@@ -39,7 +39,7 @@ class SpineLipsyncExcel(object):
         return None
 
     # SpineLipsyncExcel
-    def AnimJsonKr(self):
+    def AnimJsonkr(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(8))
         if o != 0:
             return self._tab.String(o + self._tab.Pos)
@@ -63,11 +63,11 @@ def SpineLipsyncExcelAddAnimJson(builder, animJson):
 def AddAnimJson(builder, animJson):
     SpineLipsyncExcelAddAnimJson(builder, animJson)
 
-def SpineLipsyncExcelAddAnimJsonKr(builder, animJsonKr):
-    builder.PrependUOffsetTRelativeSlot(2, flatbuffers.number_types.UOffsetTFlags.py_type(animJsonKr), 0)
+def SpineLipsyncExcelAddAnimJsonkr(builder, animJsonkr):
+    builder.PrependUOffsetTRelativeSlot(2, flatbuffers.number_types.UOffsetTFlags.py_type(animJsonkr), 0)
 
-def AddAnimJsonKr(builder, animJsonKr):
-    SpineLipsyncExcelAddAnimJsonKr(builder, animJsonKr)
+def AddAnimJsonkr(builder, animJsonkr):
+    SpineLipsyncExcelAddAnimJsonkr(builder, animJsonkr)
 
 def SpineLipsyncExcelEnd(builder):
     return builder.EndObject()

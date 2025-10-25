@@ -1,52 +1,82 @@
-import base64
-import xxhash
+import argparse
+import os
+import shutil
+import sys
+import zipfile
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from pathlib import Path
 
-N, M = 624, 397
-MATRIX_A = 0x9908B0DF
-UPPER_MASK = 0x80000000
-LOWER_MASK = 0x7FFFFFFF
+from MX_crypto import derive_password
 
-def mt19937_u32_stream(seed):
-    mt = [0] * N
-    mt[0] = seed & 0xFFFFFFFF
-    for i in range(1, N):
-        mt[i] = (1812433253 * (mt[i - 1] ^ (mt[i - 1] >> 30)) + i) & 0xFFFFFFFF
+CHUNK_SIZE = 8 * 1024 * 1024
+WRITE_BUFFERING = 8 * 1024 * 1024
 
-    idx = N
-    while True:
-        if idx >= N:
-            for i in range(N):
-                y = (mt[i] & UPPER_MASK) | (mt[(i + 1) % N] & LOWER_MASK)
-                mt[i] = mt[(i + M) % N] ^ (y >> 1) ^ (MATRIX_A if (y & 1) else 0)
-            idx = 0
 
-        y = mt[idx]
-        idx += 1
-        y ^= (y >> 11)
-        y ^= (y << 7) & 0x9D2C5680
-        y ^= (y << 15) & 0xEFC60000
-        y ^= (y >> 18)
-        yield y & 0xFFFFFFFF
+def try_extract(zip_path: Path, out_dir: Path, password: bytes):
+    with zipfile.ZipFile(zip_path, "r") as zf:
+        zf.setpassword(password)
+        for info in zf.infolist():
+            name = info.filename
+            target = (out_dir / name).resolve()
+            if info.is_dir() or name.endswith("/"):
+                target.mkdir(parents=True, exist_ok=True)
+                continue
+            target.parent.mkdir(parents=True, exist_ok=True)
+            with zf.open(info, "r") as src, open(target, "wb", buffering=WRITE_BUFFERING) as dst:
+                shutil.copyfileobj(src, dst, length=CHUNK_SIZE)
+    return True, ""
 
-def next_bytes(seed, length=15):
-    rng = mt19937_u32_stream(seed)
-    out = bytearray(length)
 
-    for i in range((length + 3) // 4): 
-        num = next(rng) >> 1
-        offset = i * 4
-        for j in range(4):
-            idx = offset + j
-            if idx < length:
-                out[idx] = (num >> (j * 8)) & 0xFF
-    return bytes(out)
+def extract_single_zip(zip_path_str: str, out_root_str: str):
+    zip_path = Path(zip_path_str)
+    out_root = Path(out_root_str)
+    filename = zip_path.name
+    out_dir = out_root / zip_path.stem
+    out_dir.mkdir(parents=True, exist_ok=True)
 
-def compute_zip_password(filename):
-    seed = xxhash.xxh32(filename.encode("utf-8")).intdigest()
-    rnd_bytes = next_bytes(seed, 15)
-    return base64.b64encode(rnd_bytes).decode("ascii")
+    pw_candidates = [derive_password(filename.lower()), derive_password(filename)]
+
+    last_err = ""
+    for pw in pw_candidates:
+        try:
+            success, msg = try_extract(zip_path, out_dir, pw)
+            if success:
+                return (zip_path.name, True, "")
+        except Exception as e:
+            last_err = f"{e}"
+            continue
+
+    return (zip_path.name, False, last_err)
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("input_dir", help="输入文件夹")
+    ap.add_argument("output_dir", help="输出文件夹")
+    args = ap.parse_args()
+
+    in_dir = Path(args.input_dir)
+    out_dir = Path(args.output_dir)
+    if not in_dir.is_dir():
+        print(f"输入目录无效: {in_dir}", file=sys.stderr)
+        sys.exit(2)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    zip_paths = [str(p) for p in in_dir.iterdir() if p.is_file() and p.suffix.lower() == ".zip"]
+    if not zip_paths:
+        print("未发现 zip 文件")
+        return
+
+    max_workers = max(1, os.cpu_count() or 1)
+    with ProcessPoolExecutor(max_workers=max_workers) as ex:
+        futures = [ex.submit(extract_single_zip, zp, str(out_dir)) for zp in zip_paths]
+        for fu in as_completed(futures):
+            name, success, msg = fu.result()
+            if success:
+                print(f"已解压: {name}")
+            else:
+                print(f"解压失败: {name}: {msg}", file=sys.stderr)
+
 
 if __name__ == "__main__":
-    filename = r"Excel.zip"
-    password = compute_zip_password(filename)
-    print(f"Computed password for '{filename}': {password}")
+    main()
