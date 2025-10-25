@@ -6,8 +6,8 @@ from glob import glob
 
 def parse_args(args=None, namespace=None):
     parser = argparse.ArgumentParser()
-    parser.add_argument("-JA", type=str, default=r"D:\Fuck_galgame\scenario")
-    parser.add_argument("-op", type=str, default=r'D:\Fuck_galgame\index.json')
+    parser.add_argument("-JA", type=str, default=r"D:\Fuck_VN\script")
+    parser.add_argument("-op", type=str, default=r'D:\Fuck_VN\index.json')
     parser.add_argument("-ft", type=int, default=0)
     return parser.parse_args(args=args, namespace=namespace)
 
@@ -102,7 +102,7 @@ def main(JA_dir, op_json, force_version):
     filelist = glob(f"{JA_dir}/**/*.s", recursive=True)
 
     results = []
-    for fn in tqdm(filelist):
+    for fn in tqdm(filelist, ncols=150):
         lines = load_lines(fn)
 
         processor(lines, results)

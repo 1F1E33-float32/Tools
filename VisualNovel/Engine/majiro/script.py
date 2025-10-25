@@ -85,6 +85,8 @@ def process_type0(data, results):
                 # 确保voice和text都不是None
                 if voice is not None and text is not None:
                     cleaned = text_cleaning(text)
+                    speaker = speaker.replace("【", "").replace("】", "")
+                    speaker = speaker.split("／")[0]
                     results.append({"Speaker": speaker, "Voice": voice, "Text": cleaned})
 
                 # 跳到扫描后的位置

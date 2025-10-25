@@ -9,8 +9,8 @@ import bytefile
 
 def parse_args(args=None, namespace=None):
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input_dir", type=str, default=r"D:\Fuck_galgame\rld_dec")
-    parser.add_argument("--output", type=str, default=r"D:\Fuck_galgame\index.json")
+    parser.add_argument("--input_dir", type=str, default=r"D:\Fuck_VN\rld_dec")
+    parser.add_argument("--output", type=str, default=r"D:\Fuck_VN\index.json")
     return parser.parse_args(args=args, namespace=namespace)
 
 

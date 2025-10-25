@@ -47,8 +47,8 @@ def decrypt_file(src_path, dst_path, key_list, xor_key, max_blocks=0x3FF0):
 
 
 if __name__ == "__main__":
-    script_dir = r"D:\GAL\2025_01\Natsu e no Hakobune III"
-    output_dir = r"D:\Fuck_galgame\rld_dec"
+    script_dir = r"E:\VN\_tmp\#JA\Midori no Umi"
+    output_dir = r"D:\Fuck_VN\rld_dec"
     key_path = os.path.join(script_dir, "key.bin")
     def_key_path = os.path.join(script_dir, "key_def.bin")
     xor_path = os.path.join(script_dir, "key.txt")
